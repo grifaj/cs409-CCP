@@ -1,0 +1,121 @@
+[2023-11-06 20:57:30,880] [$(levelname)s] $(message)s
+[2023-11-06 20:57:30,880] [INFO] Logging activated [retry True] [manual False] [target https://www.cidianwang.com/shufa/]
+[2023-11-06 20:57:30,880] [INFO] Logging activated [retry True] [manual False] [target https://www.cidianwang.com/shufa/]
+[2023-11-06 20:57:38,397] [$(levelname)s] $(message)s
+[2023-11-06 20:57:38,397] [INFO] Imported 1076 characters from index hsk.csv
+[2023-11-06 20:57:38,397] [INFO] Imported 1076 characters from index hsk.csv
+[2023-11-06 20:57:55,066] [$(levelname)s] $(message)s
+[2023-11-06 20:57:55,066] [INFO] Logging activated [retry True] [manual False] [target https://www.cidianwang.com/shufa/]
+[2023-11-06 20:57:55,066] [INFO] Logging activated [retry True] [manual False] [target https://www.cidianwang.com/shufa/]
+[2023-11-06 20:57:55,066] [INFO] Logging activated [retry True] [manual False] [target https://www.cidianwang.com/shufa/]
+[2023-11-06 20:58:00,806] [INFO] Logging activated [retry True] [manual False] [target https://www.cidianwang.com/shufa/]
+[2023-11-06 20:58:09,053] [INFO] Logging activated [retry True] [manual False] [target https://www.cidianwang.com/shufa/]
+[2023-11-06 20:58:09,053] [INFO] Logging activated [retry True] [manual False] [target https://www.cidianwang.com/shufa/]
+[2023-11-06 20:58:11,542] [INFO] Imported 1076 characters from index hsk.csv
+[2023-11-06 20:58:11,542] [INFO] Imported 1076 characters from index hsk.csv
+[2023-11-06 20:59:14,223] [DEBUG] Starting new HTTPS connection (1): www.cidianwang.com:443
+[2023-11-06 20:59:14,223] [DEBUG] Starting new HTTPS connection (1): www.cidianwang.com:443
+[2023-11-06 20:59:18,990] [DEBUG] Starting new HTTPS connection (1): www.cidianwang.com:443
+[2023-11-06 20:59:18,990] [DEBUG] Starting new HTTPS connection (1): www.cidianwang.com:443
+[2023-11-06 20:59:20,032] [DEBUG] https://www.cidianwang.com:443 "GET /shufa/ HTTP/1.1" 200 None
+[2023-11-06 20:59:20,032] [DEBUG] https://www.cidianwang.com:443 "GET /shufa/ HTTP/1.1" 200 None
+[2023-11-06 21:02:40,663] [INFO] Note: NumExpr detected 16 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+[2023-11-06 21:02:40,663] [INFO] Note: NumExpr detected 16 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+[2023-11-06 21:02:40,664] [INFO] NumExpr defaulting to 8 threads.
+[2023-11-06 21:02:40,664] [INFO] NumExpr defaulting to 8 threads.
+[2023-11-06 21:12:04,419] [DEBUG] Starting new HTTPS connection (1): search.cidianwang.com:443
+[2023-11-06 21:12:04,419] [DEBUG] Starting new HTTPS connection (1): search.cidianwang.com:443
+[2023-11-06 21:12:05,794] [DEBUG] https://search.cidianwang.com:443 "GET /?m=8&q=%E6%96%87&z=%E8%BE%93%E5%85%A5%E4%B9%A6%E6%B3%95%E5%AE%B6&y=4 HTTP/1.1" 200 3260
+[2023-11-06 21:12:05,794] [DEBUG] https://search.cidianwang.com:443 "GET /?m=8&q=%E6%96%87&z=%E8%BE%93%E5%85%A5%E4%B9%A6%E6%B3%95%E5%AE%B6&y=4 HTTP/1.1" 200 3260
+[2023-11-06 21:12:38,239] [DEBUG] Starting new HTTPS connection (1): search.cidianwang.com:443
+[2023-11-06 21:12:38,239] [DEBUG] Starting new HTTPS connection (1): search.cidianwang.com:443
+[2023-11-06 21:12:39,269] [DEBUG] https://search.cidianwang.com:443 "GET /?m=8&q=%E6%96%87&z=%E8%BE%93%E5%85%A5%E4%B9%A6%E6%B3%95%E5%AE%B6&y=4 HTTP/1.1" 200 3260
+[2023-11-06 21:12:39,269] [DEBUG] https://search.cidianwang.com:443 "GET /?m=8&q=%E6%96%87&z=%E8%BE%93%E5%85%A5%E4%B9%A6%E6%B3%95%E5%AE%B6&y=4 HTTP/1.1" 200 3260
+[2023-11-06 21:15:03,812] [DEBUG] Starting new HTTPS connection (1): search.cidianwang.com:443
+[2023-11-06 21:15:03,812] [DEBUG] Starting new HTTPS connection (1): search.cidianwang.com:443
+[2023-11-06 21:15:04,919] [DEBUG] https://search.cidianwang.com:443 "GET /?m=8&q=%E6%96%87&z=%E8%BE%93%E5%85%A5%E4%B9%A6%E6%B3%95%E5%AE%B6&y=4 HTTP/1.1" 302 2866
+[2023-11-06 21:15:04,919] [DEBUG] https://search.cidianwang.com:443 "GET /?m=8&q=%E6%96%87&z=%E8%BE%93%E5%85%A5%E4%B9%A6%E6%B3%95%E5%AE%B6&y=4 HTTP/1.1" 302 2866
+[2023-11-06 21:15:04,921] [DEBUG] Starting new HTTPS connection (1): www.cidianwang.com:443
+[2023-11-06 21:15:04,921] [DEBUG] Starting new HTTPS connection (1): www.cidianwang.com:443
+[2023-11-06 21:15:06,270] [DEBUG] https://www.cidianwang.com:443 "GET /shufa/wen6677_zs.htm HTTP/1.1" 200 None
+[2023-11-06 21:15:06,270] [DEBUG] https://www.cidianwang.com:443 "GET /shufa/wen6677_zs.htm HTTP/1.1" 200 None
+[2023-11-06 21:20:28,660] [DEBUG] Starting new HTTPS connection (1): search.cidianwang.com:443
+[2023-11-06 21:20:28,660] [DEBUG] Starting new HTTPS connection (1): search.cidianwang.com:443
+[2023-11-06 21:20:29,841] [DEBUG] https://search.cidianwang.com:443 "GET /?m=8&q=%E6%96%87&z=%E8%BE%93%E5%85%A5%E4%B9%A6%E6%B3%95%E5%AE%B6&y=4 HTTP/1.1" 302 2866
+[2023-11-06 21:20:29,841] [DEBUG] https://search.cidianwang.com:443 "GET /?m=8&q=%E6%96%87&z=%E8%BE%93%E5%85%A5%E4%B9%A6%E6%B3%95%E5%AE%B6&y=4 HTTP/1.1" 302 2866
+[2023-11-06 21:20:29,843] [DEBUG] Starting new HTTPS connection (1): www.cidianwang.com:443
+[2023-11-06 21:20:29,843] [DEBUG] Starting new HTTPS connection (1): www.cidianwang.com:443
+[2023-11-06 21:20:31,181] [DEBUG] https://www.cidianwang.com:443 "GET /shufa/wen6677_zs.htm HTTP/1.1" 200 None
+[2023-11-06 21:20:31,181] [DEBUG] https://www.cidianwang.com:443 "GET /shufa/wen6677_zs.htm HTTP/1.1" 200 None
+[2023-11-06 21:39:58,797] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:39:58,797] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:00,064] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/ligangtian/201972592947a7b67.jpg HTTP/1.1" 200 12326
+[2023-11-06 21:40:00,064] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/ligangtian/201972592947a7b67.jpg HTTP/1.1" 200 12326
+[2023-11-06 21:40:00,074] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:00,074] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:01,109] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/laichusheng/2019725926355310.jpg HTTP/1.1" 200 10180
+[2023-11-06 21:40:01,109] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/laichusheng/2019725926355310.jpg HTTP/1.1" 200 10180
+[2023-11-06 21:40:01,116] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:01,116] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:02,222] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/2018841833845f5f.jpg HTTP/1.1" 200 22193
+[2023-11-06 21:40:02,222] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/2018841833845f5f.jpg HTTP/1.1" 200 22193
+[2023-11-06 21:40:02,250] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:02,250] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:03,320] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/2018841829473b63f.jpg HTTP/1.1" 200 14246
+[2023-11-06 21:40:03,320] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/2018841829473b63f.jpg HTTP/1.1" 200 14246
+[2023-11-06 21:40:03,328] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:03,328] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:04,381] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/201832211456814eb.jpg HTTP/1.1" 200 11240
+[2023-11-06 21:40:04,381] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/201832211456814eb.jpg HTTP/1.1" 200 11240
+[2023-11-06 21:40:04,397] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:04,397] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:05,546] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/hantianheng/201742417575003bde.jpg HTTP/1.1" 200 19827
+[2023-11-06 21:40:05,546] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/hantianheng/201742417575003bde.jpg HTTP/1.1" 200 19827
+[2023-11-06 21:40:05,582] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:05,582] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:06,715] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/liyangbing/201712218341634ce5.jpg HTTP/1.1" 200 26943
+[2023-11-06 21:40:06,715] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/liyangbing/201712218341634ce5.jpg HTTP/1.1" 200 26943
+[2023-11-06 21:40:06,737] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:06,737] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:07,926] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/dengshiru/201692516341206a20.jpg HTTP/1.1" 200 10502
+[2023-11-06 21:40:07,926] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/dengshiru/201692516341206a20.jpg HTTP/1.1" 200 10502
+[2023-11-06 21:40:07,936] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:07,936] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:09,059] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/dengshiru/201692516340812c6.jpg HTTP/1.1" 200 10696
+[2023-11-06 21:40:09,059] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/dengshiru/201692516340812c6.jpg HTTP/1.1" 200 10696
+[2023-11-06 21:40:09,069] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:09,069] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:10,236] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/20169251623530d43b.jpg HTTP/1.1" 200 9958
+[2023-11-06 21:40:10,236] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/20169251623530d43b.jpg HTTP/1.1" 200 9958
+[2023-11-06 21:40:10,244] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:10,244] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:11,335] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/fangquji/2016925161354200dd.jpg HTTP/1.1" 200 18767
+[2023-11-06 21:40:11,335] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/fangquji/2016925161354200dd.jpg HTTP/1.1" 200 18767
+[2023-11-06 21:40:11,360] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:11,360] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:12,427] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/e7de73e1705adb14.gif HTTP/1.1" 200 8894
+[2023-11-06 21:40:12,427] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/e7de73e1705adb14.gif HTTP/1.1" 200 8894
+[2023-11-06 21:40:12,436] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:12,436] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:13,433] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/f88af7cff61c1c23.gif HTTP/1.1" 200 9875
+[2023-11-06 21:40:13,433] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/f88af7cff61c1c23.gif HTTP/1.1" 200 9875
+[2023-11-06 21:40:13,442] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:13,442] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:14,555] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/68bcca8e60e8b68a.gif HTTP/1.1" 200 10630
+[2023-11-06 21:40:14,555] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/68bcca8e60e8b68a.gif HTTP/1.1" 200 10630
+[2023-11-06 21:40:14,564] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:14,564] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:15,716] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/c43c8e0819f41f6c.gif HTTP/1.1" 200 9965
+[2023-11-06 21:40:15,716] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/c43c8e0819f41f6c.gif HTTP/1.1" 200 9965
+[2023-11-06 21:40:15,725] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:15,725] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:16,865] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/e091f629e110c4a0.gif HTTP/1.1" 200 9145
+[2023-11-06 21:40:16,865] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/e091f629e110c4a0.gif HTTP/1.1" 200 9145
+[2023-11-06 21:40:16,874] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:16,874] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:17,917] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/201692516231304785.jpg HTTP/1.1" 200 13039
+[2023-11-06 21:40:17,917] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/201692516231304785.jpg HTTP/1.1" 200 13039
+[2023-11-06 21:40:17,927] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:17,927] [DEBUG] Starting new HTTPS connection (1): c.cidianwang.com:443
+[2023-11-06 21:40:19,018] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/20183221144861aac.jpg HTTP/1.1" 200 9525
+[2023-11-06 21:40:19,018] [DEBUG] https://c.cidianwang.com:443 "GET /file/shufa/zhuanshu/20183221144861aac.jpg HTTP/1.1" 200 9525
