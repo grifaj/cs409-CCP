@@ -1,0 +1,6 @@
+data/source/
+data/testims/*
+data/images/*
+data/data/*
+
+data/log_3.log
