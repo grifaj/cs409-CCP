@@ -3,3 +3,4 @@ data/images/*
 data/data/*
 
 data/log_3.log
+**/*.log
