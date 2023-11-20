@@ -1,7 +1,8 @@
 data/source/
-data/testims/*
-data/images/*
-data/data/*
+data/testims/
+data/images/
+data/data/
+data/MASTER/
 
 data/log_3.log
 .vscode
