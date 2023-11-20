@@ -4,6 +4,24 @@
 #include "opencv2/imgproc.hpp"
 #include "iostream"
 
+cv::Mat mserDetection(cv::Mat img, bool thresholding = false)
+{
+    std::vector<std::vector<cv::Point>> regions;
+    std::vector<cv::Rect> bboxes;
+
+    cv::Ptr<cv::MSER> mser = cv::MSER::create();
+
+    mser->detectRegions(img, regions, bboxes);
+    cv::Scalar colour = cv::Scalar(256, 0, 0);
+
+    for (size_t i = 0; i < bboxes.size(); i++)
+    {
+        rectangle(img, bboxes[i].tl(), bboxes[i].br(), colour, 2);
+    }
+
+    return img;
+}
+
 void abCorrection(cv::Mat img, double minBright) {
     //get the average brightness value across the image
     double avgBright = cv::mean(img)[0] / 255;
@@ -34,6 +52,11 @@ void gammaCorrect(cv::Mat img, double gam) {
     dgam.convertTo(img, CV_8U);
 }
 
+//sharpen LAB image -> Histogram equalize -> Grayscale -> Alpha-beta correction -> Bilateral Filter -> Gamma correction -> Canny edge detection
+//Thinking we should swap it to: Fourier Transform -> Sharpen and remove noise frequencies and then see what other steps will be useful from there
+
+
+
 /*
 hyperparameters which need to be decided on:
 -gamma value
@@ -50,10 +73,10 @@ int showImage() {
     int WIDTH = 650;
     int HEIGHT = 650;
     //read in image - this is my path to it you'll need to change that for yourself.
-    std::string path = "..\\..\\..\\seal script image 3.jpg";
+    std::string path = "..\\..\\..\\seal script image 9.jpg";
     cv::Mat img = cv::imread(path);
     //Use this to resize final image 
-    cv::resize(img, img, cv::Size(), 0.75, 0.75);
+    cv::resize(img, img, cv::Size(), 1, 1);
 
     //convert original image to Lab - this is a good format for sharpening 
     cv::Mat labImg;
@@ -71,7 +94,7 @@ int showImage() {
 
     cv::merge(vec_channels_lab, labImg);
 
-    //cvtColor(labImg, img, cv::COLOR_Lab2BGR);
+    cvtColor(labImg, img, cv::COLOR_Lab2BGR);
 
     //convert image to YCrCb so histogram equalising doesn't affecting image colouring
     cv::Mat hist_equalized_img;
@@ -119,6 +142,9 @@ int showImage() {
     //perform canny edge detection to attempt to detect character edges.
     cv::Mat canny;
     cv::Canny(graySmoothed, canny, 200 / 3, 200);
+
+    cv::Mat mserDetect;
+    mserDetect = mserDetection(graySmoothed, false);
 
     //perform canny edge detection on original sharpened image. Not even grayscale.
     //cv::Mat cannyImg;
@@ -168,6 +194,7 @@ int showImage() {
     //cv::imshow("Sharp", labImg);
     cv::imshow("Enhanced Grayscale Image", graySmoothed);
     cv::imshow("Canny Edge Detector on Enhanced Image", canny);
+    cv::imshow("Bounding boxes with MSER", mserDetect);
     //cv::imshow("Canny Edge on Original Image", cannyImg);
     //cv::imshow("Canny on Sharp Image", cannySharp);
     //cv::imshow("Threshold", thresh);
