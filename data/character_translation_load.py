@@ -28,6 +28,8 @@ class DatasetLoad():
             writer = csv.writer(f)
             for x in range(len(toCsv)):
                 writer.writerow(toCsv[x])
+        
+            f.close()
 
     # def load(self):
     #     for root, files, name in os.walk(self.dir):
