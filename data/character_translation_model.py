@@ -20,9 +20,9 @@ class LeNet(Module):
         self.conv2 = Conv2d(in_channels=20, out_channels=50,
             kernel_size=(5, 5))
         self.relu2 = ReLU()
-        self.maxpool2 = MaxPool2d(kernel_size=(4, 4), stride=(4, 4))
+        self.maxpool2 = MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
         # initialize first (and only) set of FC => RELU layers
-        self.fc1 = Linear(in_features=45000, out_features=10000)
+        self.fc1 = Linear(in_features=42050, out_features=10000)
         self.relu3 = ReLU()
         # initialize our softmax classifier
         self.fc2 = Linear(in_features=10000, out_features=classes)
