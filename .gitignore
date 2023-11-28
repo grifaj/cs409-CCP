@@ -3,6 +3,9 @@ data/testims/
 data/images/
 data/data/
 data/MASTER/
+data/test_ims/*/
+
+**/__pycache__
 
 data/log_3.log
 .vscode
