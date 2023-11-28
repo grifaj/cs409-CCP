@@ -4,23 +4,188 @@
 #include "opencv2/imgproc.hpp"
 #include "iostream"
 
-cv::Mat mserDetection(cv::Mat img, bool thresholding = false)
+void clearSuspiciousBoxes(cv::Mat& img, std::vector<cv::Rect> inBoxes, std::vector<cv::Rect>& outboxes, double suspicionThresh = 0.5, int widthSuspicion = 5, int heightSuspicion = 5, double aspectRatioSuspicion = 4.0)
+{
+    int height = img.size().height;
+    int width = img.size().width;
+
+    bool suspiciouslyLarge = 0;
+    bool suspiciouslyNarrow = 0;
+    bool suspiciousAspect = 0;
+
+    double aspectRatio;
+
+    for (auto box : inBoxes)
+    {
+        suspiciouslyLarge = box.width > width * suspicionThresh or box.height > height * suspicionThresh;
+        suspiciouslyNarrow = box.width <= widthSuspicion or box.height <= heightSuspicion;
+        aspectRatio = double(box.width) / double(box.height);
+        suspiciousAspect = aspectRatio >= aspectRatioSuspicion or aspectRatio <= 1 / aspectRatioSuspicion;
+
+        if (!(suspiciouslyLarge) && !(suspiciouslyNarrow) && !(suspiciousAspect))
+        {
+            outboxes.push_back(box);
+        }
+        else
+        {
+            //std::cout << aspectRatio << "\n";
+        }
+    }
+}
+
+void mergeBounding(std::vector<cv::Rect>& inBoxes, cv::Mat& img, std::vector<cv::Rect>& outBoxes, cv::Size scaleFactor)
+{
+    cv::Mat mask = cv::Mat::zeros(img.size(), CV_8UC1); // Create a blank image that we can draw rectangles on.
+    cv::Scalar colour = cv::Scalar(255);
+
+    //Draw filled version of our bounding boxes on mask image. This will give us connected bounding boxes we can find contours on to combine.
+    for (int i = 0; i < inBoxes.size(); i++)
+    {
+        cv::Rect bbox = inBoxes.at(i) + scaleFactor;
+        rectangle(mask, bbox, colour, cv::FILLED);
+
+    }
+
+    std::vector<std::vector<cv::Point>> contours;
+    //Draw contours on image and join them to then find our new bounding boxes.
+    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    for (int i = 0; i < contours.size(); i++)
+    {
+        outBoxes.push_back(cv::boundingRect(contours.at(i))-scaleFactor);
+    }
+}
+
+/*cv::RNG rng(12345);
+for (size_t i = 0; i < contours.size(); i++)
+{
+    cv::Scalar color = cv::Scalar(rng.uniform(0, 256), rng.uniform(0, 256), rng.uniform(0, 256));
+    drawContours(mask2, contours, (int)i, color, 2, cv::LINE_8, hierarchy, 0);
+}
+
+cv::imshow("Contours", mask2);*/
+
+/*for (int i = 0; i < contours.size(); i++)
+{
+    double area = cv::contourArea(contours.at(i));
+    double perimeter = cv::arcLength(contours.at(i), 1);
+    double squareness = cv::norm(((perimeter / 4) * (perimeter / 4)) - area);
+}*/
+
+
+cv::Mat mserDetection(cv::Mat img, bool thresholding = false, int xthresh = 10, int ythresh = 10)
 {
     std::vector<std::vector<cv::Point>> regions;
-    std::vector<cv::Rect> bboxes;
+    std::vector<cv::Rect> boxes;
 
     cv::Ptr<cv::MSER> mser = cv::MSER::create();
 
-    mser->detectRegions(img, regions, bboxes);
-    cv::Scalar colour = cv::Scalar(256, 0, 0);
+    mser->detectRegions(img, regions, boxes);
+    cv::Scalar colour = cv::Scalar(255);
 
-    for (size_t i = 0; i < bboxes.size(); i++)
+    std::vector<cv::Rect> bboxes;
+
+    //This section removes any suspicious bounding boxes that are either too big or too small!
+
+    clearSuspiciousBoxes(img, boxes, bboxes);
+
+    //Below is the code to combine overlapping or close bounding boxes together 
+
+    cv::Size scaleFactor(-10, -10); //Can adjust sensitivity of the boxes to other boxes by editing these values.
+    std::vector<cv::Rect> outboxes; //List of end rectangles that are retrieved
+
+    mergeBounding(bboxes, img, outboxes, scaleFactor);
+
+    double diff;
+    for (int i = 0; i < outboxes.size(); i++)
     {
-        rectangle(img, bboxes[i].tl(), bboxes[i].br(), colour, 2);
+        double aspectRatio = double(outboxes.at(i).width) / double(outboxes.at(i).height);
+        
+        std::cout << aspectRatio << "\n";
+        if (aspectRatio >= 2)
+        {
+            std::cout << "Detected!\n";
+            diff = double(outboxes.at(i).width) - double(outboxes.at(i).height);
+            outboxes[i] = outboxes.at(i) + cv::Size(0, diff/4);
+        }
+        else if (aspectRatio <= 0.5)
+        {
+            std::cout << "Detected!\n";
+            diff = double(outboxes.at(i).height) - double(outboxes.at(i).width);
+            outboxes[i] = outboxes.at(i) + cv::Size(diff/4, 0);
+        }
     }
+
+    std::vector<cv::Rect> finalBoxes;
+
+    mergeBounding(outboxes, img, finalBoxes, cv::Size(-2, -2));
+
+
+    cvtColor(img, img, cv::COLOR_GRAY2BGR);
+
+
+    for (size_t i = 0; i < finalBoxes.size(); i++)
+    {
+        rectangle(img, finalBoxes[i].tl(), finalBoxes[i].br(), cv::Scalar(0,0,255), 2);
+    }
+
+    //This section can be uncommented to draw original bounding boxes from MSER instead of the updated ones.
+    //for (size_t i = 0; i < bboxes.size(); i++)
+    //{
+    //    rectangle(img, bboxes[i].tl(), bboxes[i].br(), colour, 2);
+    //}
 
     return img;
 }
+int showImage2() {
+    //read in image
+    //read in image - this is my path to it you'll need to change that for yourself.
+    std::string path = "..\\..\\..\\seal script image 14.jpg";
+    cv::Mat img = cv::imread(path);
+    //Use this to resize final image 
+    cv::resize(img, img, cv::Size(), 1.2, 1.2, cv::INTER_CUBIC);
+
+    cv::Mat grayImg;
+    cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
+
+    //kernel = np.ones((1, 1), np.uint8)
+    cv::Mat grayDilate;
+    cv::Mat grayErode;
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, 1));
+    cv::dilate(grayImg, grayDilate, kernel, cv::Point(-1,-1), 1);
+    cv::erode(grayDilate, grayErode, kernel, cv::Point(-1, -1), 1);
+
+    //apply bilateral/median filter to reduce noise
+    //Median filter seems to work better on the whole. Edges of the characters don't seem to be too affected in the blurring process.
+    cv::Mat graySmoothed;
+    cv::medianBlur(grayErode, graySmoothed, 3);
+    //cv::bilateralFilter(grayErode, graySmoothed, 5, 75, 75);
+
+    //cv::Mat grayThresholded;
+
+    //cv::adaptiveThreshold(graySmoothed, grayThresholded, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 31, 2);
+
+    cv::Mat mserDetect;
+    mserDetect = mserDetection(graySmoothed, false);
+
+    cv::imshow("Bounding boxes with MSER", mserDetect);
+
+    cv::waitKey(0);
+    return 0;
+}
+
+//sharpen LAB image -> Histogram equalize -> Grayscale -> Alpha-beta correction -> Bilateral Filter -> Gamma correction -> Canny edge detection
+//Thinking we should swap it to: Fourier Transform -> Sharpen and remove noise frequencies and then see what other steps will be useful from there
+
+/*
+hyperparameters which need to be decided on:
+-gamma value
+-alpha beta ratio (contrast increase/decrease)
+-canny thresholds
+-bilteral filtering sigma values and diameter
+-unsharp mask, gaussian sigma and amount
+-thresholding for binarization
+*/
 
 void abCorrection(cv::Mat img, double minBright) {
     //get the average brightness value across the image
@@ -52,20 +217,6 @@ void gammaCorrect(cv::Mat img, double gam) {
     dgam.convertTo(img, CV_8U);
 }
 
-//sharpen LAB image -> Histogram equalize -> Grayscale -> Alpha-beta correction -> Bilateral Filter -> Gamma correction -> Canny edge detection
-//Thinking we should swap it to: Fourier Transform -> Sharpen and remove noise frequencies and then see what other steps will be useful from there
-
-
-
-/*
-hyperparameters which need to be decided on:
--gamma value
--alpha beta ratio (contrast increase/decrease)
--canny thresholds
--bilteral filtering sigma values and diameter
--unsharp mask, gaussian sigma and amount
--thresholding for binarization
-*/
 
 int showImage() {
     //read in image
@@ -73,10 +224,10 @@ int showImage() {
     int WIDTH = 650;
     int HEIGHT = 650;
     //read in image - this is my path to it you'll need to change that for yourself.
-    std::string path = "..\\..\\..\\seal script image 9.jpg";
+    std::string path = "..\\..\\..\\seal script image 13.jpg";
     cv::Mat img = cv::imread(path);
     //Use this to resize final image 
-    cv::resize(img, img, cv::Size(), 1, 1);
+    cv::resize(img, img, cv::Size(), 1, 1, cv::INTER_CUBIC);
 
     //convert original image to Lab - this is a good format for sharpening 
     cv::Mat labImg;
@@ -291,6 +442,6 @@ int showWebCameraContent() {
 }
 
 int main(int, char**) {
-    showImage();
+    showImage2();
     //showWebCameraContent();
 }
