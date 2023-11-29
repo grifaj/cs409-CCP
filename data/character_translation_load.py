@@ -16,10 +16,10 @@ class DatasetLoad():
         for root, files, name in os.walk(self.dir):      
             if root != self.dir:
                 for x in name:
-                    if '.png' in x:      
-                        # print(root)          
-                        index = root[root.index("\\")+1:]
-                        print(index)
+                    if '.png' in x:
+                        # index = root[root.index(os.sep)+1:]
+                        index = root.split(os.sep)[-1]
+                        print(f"{x}, path={os.path.join(root, x)}, index={index}")
                         toCsv.append([os.path.join(root, x), int(index)])
                         
                         
