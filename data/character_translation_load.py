@@ -19,7 +19,7 @@ class DatasetLoad():
                     if '.png' in x:
                         # index = root[root.index(os.sep)+1:]
                         index = root.split(os.sep)[-1]
-                        print(f"{x}, path={os.path.join(root, x)}, index={index}")
+                        # print(f"{x}, path={os.path.join(root, x)}, index={index}")
                         toCsv.append([os.path.join(root, x), int(index)])
                         
                         
