@@ -4,7 +4,7 @@
 #include "opencv2/imgproc.hpp"
 #include "iostream"
 
-void clearSuspiciousBoxes(cv::Mat& img, std::vector<cv::Rect> inBoxes, std::vector<cv::Rect>& outboxes, double suspicionThresh = 0.5, int widthSuspicion = 5, int heightSuspicion = 5, double aspectRatioSuspicion = 4.0)
+void clearSuspiciousBoxes(cv::Mat& img, std::vector<cv::Rect> inBoxes, std::vector<cv::Rect>& outboxes, double suspicionThresh = 0.5, int widthSuspicion = 5, int heightSuspicion = 5, double aspectRatioSuspicion = 8.0)
 {
     int height = img.size().height;
     int width = img.size().width;
@@ -78,7 +78,7 @@ cv::Mat mserDetection(cv::Mat img, bool thresholding = false, int xthresh = 10, 
     std::vector<std::vector<cv::Point>> regions;
     std::vector<cv::Rect> boxes;
 
-    cv::Ptr<cv::MSER> mser = cv::MSER::create();
+    cv::Ptr<cv::MSER> mser = cv::MSER::create(7, 60, 14400, 0.25);
 
     mser->detectRegions(img, regions, boxes);
     cv::Scalar colour = cv::Scalar(255);
@@ -102,17 +102,17 @@ cv::Mat mserDetection(cv::Mat img, bool thresholding = false, int xthresh = 10, 
         double aspectRatio = double(outboxes.at(i).width) / double(outboxes.at(i).height);
         
         std::cout << aspectRatio << "\n";
-        if (aspectRatio >= 2)
+        if (aspectRatio >= 2.0)
         {
             std::cout << "Detected!\n";
             diff = double(outboxes.at(i).width) - double(outboxes.at(i).height);
-            outboxes[i] = outboxes.at(i) + cv::Size(0, diff/4);
+            outboxes[i] = outboxes.at(i) + cv::Size(0, diff/4.0);
         }
-        else if (aspectRatio <= 0.5)
+        else if (aspectRatio <= (1.0/2.0))
         {
             std::cout << "Detected!\n";
             diff = double(outboxes.at(i).height) - double(outboxes.at(i).width);
-            outboxes[i] = outboxes.at(i) + cv::Size(diff/4, 0);
+            outboxes[i] = outboxes.at(i) + cv::Size(diff/4.0, 0);
         }
     }
 
@@ -137,6 +137,18 @@ cv::Mat mserDetection(cv::Mat img, bool thresholding = false, int xthresh = 10, 
 
     return img;
 }
+
+void gammaCorrect(cv::Mat img, double gam) {
+    cv::Mat1d dimg;
+
+    img.convertTo(dimg, CV_64F);
+
+    cv::Mat1d dgam;
+    cv::pow(dimg, gam, dgam);
+
+    dgam.convertTo(img, CV_8U);
+}
+
 int showImage2() {
     //read in image
     //read in image - this is my path to it you'll need to change that for yourself.
@@ -148,10 +160,12 @@ int showImage2() {
     cv::Mat grayImg;
     cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
 
+    gammaCorrect(grayImg, 0.95);
+
     //kernel = np.ones((1, 1), np.uint8)
     cv::Mat grayDilate;
     cv::Mat grayErode;
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, 1));
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3,3));
     cv::dilate(grayImg, grayDilate, kernel, cv::Point(-1,-1), 1);
     cv::erode(grayDilate, grayErode, kernel, cv::Point(-1, -1), 1);
 
@@ -159,15 +173,15 @@ int showImage2() {
     //Median filter seems to work better on the whole. Edges of the characters don't seem to be too affected in the blurring process.
     cv::Mat graySmoothed;
     cv::medianBlur(grayErode, graySmoothed, 3);
-    //cv::bilateralFilter(grayErode, graySmoothed, 5, 75, 75);
+    //cv::bilateralFilter(grayErode, graySmoothed, 5, 90, 90);
 
     //cv::Mat grayThresholded;
-
     //cv::adaptiveThreshold(graySmoothed, grayThresholded, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 31, 2);
 
     cv::Mat mserDetect;
     mserDetect = mserDetection(graySmoothed, false);
 
+    cv::imshow("Enhanced Image", graySmoothed);
     cv::imshow("Bounding boxes with MSER", mserDetect);
 
     cv::waitKey(0);
@@ -204,17 +218,6 @@ void abCorrection(cv::Mat img, double minBright) {
     }
 
     cv::convertScaleAbs(img, img, (1 / ratio), 0);
-}
-
-void gammaCorrect(cv::Mat img, double gam) {
-    cv::Mat1d dimg;
-
-    img.convertTo(dimg, CV_64F);
-
-    cv::Mat1d dgam;
-    cv::pow(dimg, gam, dgam);
-
-    dgam.convertTo(img, CV_8U);
 }
 
 
