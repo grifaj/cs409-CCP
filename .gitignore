@@ -10,3 +10,5 @@ data/test_ims/*/
 data/log_3.log
 .vscode
 **/*.log
+**/*.err
+**/*.out
