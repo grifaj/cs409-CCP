@@ -4,7 +4,7 @@
 #SBATCH --partition=parrot  # Partition you wish to use (see above for list)
 #SBATCH --cpus-per-task=1      # Number of CPU threads used by your job, set this upto 40 as required.
 #SBATCH --mem-per-cpu=2000     # RAM in MB needed per core (i.e. 1500MB * 40 threads = 60GB RAM)
-#SBATCH --time=0-00:06:00      # Job time limit set to 2 days (48 hours)
+#SBATCH --time=0-01:00:00      # Job time limit set to 2 days (48 hours)
 #
 #SBATCH --output=joboutput_%j.out # Standard out from your job
 #SBATCH --error=joboutput_%j.err  # Standard error from your job
