@@ -76,6 +76,8 @@ public class CameraActivity extends AppCompatActivity {
         switchLens.setOnClickListener(v -> {
             if (lensFacing == CameraSelector.DEFAULT_FRONT_CAMERA) lensFacing = CameraSelector.DEFAULT_BACK_CAMERA;
             else if (lensFacing == CameraSelector.DEFAULT_BACK_CAMERA) lensFacing = CameraSelector.DEFAULT_FRONT_CAMERA;
+            // spin icon
+            switchLens.animate().rotation(180-switchLens.getRotation()).start();
             showImagePreview();
         });
     }
