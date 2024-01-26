@@ -4,6 +4,8 @@ data/images/
 data/data/
 data/MASTER/
 data/test_ims/*/
+data/source_2/
+data/test/
 
 **/__pycache__
 
