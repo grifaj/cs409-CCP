@@ -44,7 +44,7 @@ Running the following command will begin training the CNN.
 
 `<data_file>` - the name of the csv containing image paths and labels (string).
 
-`<model_path>` - the path where the trained model will be saved (string).
+`<model_path>` - the file where the trained model will be saved (string). Filename must end in `.pth` extension.
 
 `<results_dir>` - the path to the directory where the training results will be recorded (string).
 
