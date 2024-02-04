@@ -82,16 +82,13 @@ cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, in
     {
         double aspectRatio = double(outboxes.at(i).width) / double(outboxes.at(i).height);
 
-        std::cout << aspectRatio << "\n";
         if (aspectRatio >= 2.0)
         {
-            std::cout << "Detected!\n";
             diff = double(outboxes.at(i).width) - double(outboxes.at(i).height);
             outboxes[i] = outboxes.at(i) + cv::Size(0, diff / 4.0);
         }
         else if (aspectRatio <= (1.0 / 2.0))
         {
-            std::cout << "Detected!\n";
             diff = double(outboxes.at(i).height) - double(outboxes.at(i).width);
             outboxes[i] = outboxes.at(i) + cv::Size(diff / 4.0, 0);
         }
@@ -105,12 +102,53 @@ cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, in
     cvtColor(img, img, cv::COLOR_GRAY2BGR);
 
 
-    for (size_t i = 0; i < outboxes.size(); i++)
+    for (size_t i = 0; i < finalBoxes.size(); i++)
     {
-        rectangle(colImg, outboxes[i].tl(), outboxes[i].br(), cv::Scalar(0, 0, 255), 2);
+        rectangle(colImg, finalBoxes[i].tl(), finalBoxes[i].br(), cv::Scalar(0, 0, 255), 2);
+
+        cv::Point bottomLeft = finalBoxes[i].tl() + cv::Point(0, finalBoxes[i].height);
+
+        cv::putText(colImg,
+            "A",
+            bottomLeft, // Coordinates (Bottom-left corner of the text string in the image)
+            cv::FONT_HERSHEY_COMPLEX_SMALL, // Font
+            1.0, // Scale. 2.0 = 2x bigger
+            cv::Scalar(0, 0, 0), // BGR Color
+            1, // Line Thickness (Optional)
+            cv::LINE_AA); // Anti-alias (Optional, see version note)
+
     }
 
     return colImg;
+}
+
+cv::Mat gammaCorrect(cv::Mat img, double gam) {
+
+
+    cv::Mat hsvImg;
+    cvtColor(img, hsvImg, cv::COLOR_BGR2HSV);
+
+    std::vector<cv::Mat> vec_channels;
+    cv::split(hsvImg, vec_channels);
+
+    double mid = 0.5;
+    double mean = cv::mean(vec_channels[2])[0];
+    double gamma = log(mid * 255) / log(mean);
+
+    cv::Mat1d channel_gamma;
+
+    vec_channels[2].convertTo(channel_gamma, CV_64F);
+
+    cv::pow(channel_gamma, gam, channel_gamma);
+
+    channel_gamma.convertTo(vec_channels[2], CV_8U);
+
+    cv::merge(vec_channels, hsvImg);
+
+    cvtColor(hsvImg, img, cv::COLOR_HSV2BGR);
+
+    return img;
+
 }
 
 cv::Mat captureImage(cv::Mat img) {
@@ -118,9 +156,11 @@ cv::Mat captureImage(cv::Mat img) {
     cv::Mat grayImg;
     cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
 
+    img = gammaCorrect(img, 0.95);
+
     cv::Mat grayDilate;
     cv::Mat grayErode;
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
     cv::dilate(grayImg, grayDilate, kernel, cv::Point(-1, -1), 1);
     cv::erode(grayDilate, grayErode, kernel, cv::Point(-1, -1), 1);
 
@@ -132,3 +172,19 @@ cv::Mat captureImage(cv::Mat img) {
 
     return mserDetect;
 }
+
+//int main(int, char**) {
+//    std::string path = "..\\..\\..\\seal script image 14.jpg";
+//    cv::Mat img = cv::imread(path);
+//    double factor = 700.0 / img.size().height;
+//    cv::resize(img, img, cv::Size(), factor, factor, cv::INTER_CUBIC);
+//
+//    
+//
+//
+//    cv::Mat Image = captureImage(img);
+//
+//    cv::imshow("Image", Image);
+//
+//    cv::waitKey(0);
+//}
