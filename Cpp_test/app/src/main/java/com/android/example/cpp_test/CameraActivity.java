@@ -1,14 +1,22 @@
 package com.android.example.cpp_test;
 
+import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
+import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.ImageCapture;
+import androidx.camera.core.MeteringPoint;
+import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -19,7 +27,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
-import org.opencv.imgproc.Imgproc;
 
 import java.util.concurrent.ExecutionException;
 
@@ -29,12 +36,14 @@ public class CameraActivity extends AppCompatActivity {
     }
     private PreviewView previewView;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
+    private Camera camera;
     private ImageView photoPreview;
     private ImageView closePhotoPreview;
     private CameraSelector lensFacing = CameraSelector.DEFAULT_BACK_CAMERA;
     Mat cvMat;
     Bitmap bitmapPhoto;
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,6 +89,28 @@ public class CameraActivity extends AppCompatActivity {
             switchLens.animate().rotation(180-switchLens.getRotation()).start();
             showImagePreview();
         });
+
+//        previewView.setOnTouchListener((v, event) -> {
+//            if(event.getAction() == MotionEvent.ACTION_UP){
+//                //final Rect sensorArraySize = cameraProviderFuture.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+//                int x = (int) event.getX();
+//                int y = (int) event.getY();
+//
+//                MeteringPointFactory factory  = new MeteringPointFactory(
+//                        ((float) previewView.getWidth()), ((float) previewView.getHeight())
+//                );
+//                MeteringPoint meteringPoint = factory.createPoint(x,y);
+//                camera.getCameraControl().startFocusAndMetering(
+//                        new FocusMeteringAction.Builder(
+//                                meteringPoint,
+//                                FocusMeteringAction.FLAG_AF
+//                        ).build()
+//                     );
+//                return true;
+//            }
+//            return false;
+//        });
+
     }
 
     private void showImagePreview() {
@@ -96,7 +127,7 @@ public class CameraActivity extends AppCompatActivity {
                 processCameraProvider.unbindAll();
 
                 // lensFacing is used here
-                processCameraProvider.bindToLifecycle((LifecycleOwner)this, lensFacing, imageCapture, preview);
+                Camera camera = processCameraProvider.bindToLifecycle((LifecycleOwner)this, lensFacing, imageCapture, preview);
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }

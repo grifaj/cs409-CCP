@@ -6,7 +6,7 @@
 #include "opencv2/imgproc.hpp"
 #include "enhance.h"
 
-cv::Mat showImage2(cv::Mat mat);
+cv::Mat captureImage(cv::Mat mat);
 
 extern "C"
 JNIEXPORT jstring JNICALL
@@ -26,5 +26,5 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_android_example_cpp_1test_CameraActivity_callBoundingBoxes(JNIEnv *env, jobject thiz, jlong image) {
     cv::Mat* matImage=(cv::Mat*)image;
-    *matImage =  showImage2(*matImage);
+    *matImage =  captureImage(*matImage);
 }
