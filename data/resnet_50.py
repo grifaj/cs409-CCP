@@ -7,6 +7,7 @@ import csv
 import pandas as pd
 # import traceback
 import argparse
+from tqdm import tqdm
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
@@ -53,7 +54,6 @@ def init_dataset(data_file, test_size=0.25):
         return False, None, None, None, None
     else:
         data = pd.read_csv(data_file, names=['file_path', 'label'])
-        print(data)
         x = data['file_path']
         y = data['label']
         num_classes = np.unique(y)[-1]
@@ -84,10 +84,12 @@ def init_dataset(data_file, test_size=0.25):
         dataloaders = {'train': train_loader, 'validation': val_loader, 'test': test_loader}
         datasets = {'train': train_data_object, 'validation': val_data_object, 'test': test_data_object}
 
+        print('[INFO] Data loaded successfully.')
+
     return True, dataloaders, datasets, num_classes, len(x)
 
 
-def init_model(num_classes, pretrained=False):
+def init_model(num_classes, use_cpu=False, pretrained=False):
     '''
     Initialize device for cuda and load resnet50 model.
     '''
@@ -108,6 +110,8 @@ def init_model(num_classes, pretrained=False):
         
     if device.type == "cuda":
         model.cuda()
+
+    print(f'[INFO] Using device: {device.type}')
 
     ## Initialize model
     model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False).to(device)
@@ -132,7 +136,7 @@ def train_model(model, criterion, optimizer, training_results_dir, num_examples,
     file_name = f'{MODEL_NAME}_B{BATCH_SIZE}_E{EPOCHS}_I{IMAGE_SIZE}_N{num_examples}.txt' # make file to store training results
     print(f'[INFO] New file created: {file_name}')
     with open(os.path.join(training_results_dir, file_name), 'w') as f:
-        for epoch in range(num_epochs):
+        for epoch in tqdm(range(num_epochs)):
             print('Epoch {}/{}'.format(epoch+1, num_epochs))
             f.write('Epoch {}/{}\n'.format(epoch+1, num_epochs))
             print('-' * 10)
@@ -172,9 +176,9 @@ def train_model(model, criterion, optimizer, training_results_dir, num_examples,
                 f.write('{} loss: {:.4f}, acc: {:.4f}\n'.format(phase,
                                                             epoch_loss,
                                                             epoch_acc))
-    f.close()
+        f.close()
     
-    return model
+    return model, file_name
 
 def gen_csv_file(data_file, data_dir, file_ext, log_file):
     with open(data_file, 'w', newline="") as csv_file:
@@ -209,12 +213,12 @@ if __name__ == "__main__":
     parser.add_argument("data_dir", type=str)
     parser.add_argument("file_ext", type=str)
     parser.add_argument("test_size", type=float)
-    parser.add_argument("pretrained", type=bool)
     parser.add_argument("data_file", type=str)
     parser.add_argument("model_path", type=str)
     parser.add_argument("results_dir", type=str)
     parser.add_argument("log_file", type=str)
-    parser.add_argument("use_cpu", type=bool)
+    parser.add_argument("-pretrained", action="store_true")
+    parser.add_argument("-use_cpu", action="store_true")
 
     args = parser.parse_args()
 
@@ -232,7 +236,8 @@ if __name__ == "__main__":
     results_dir = args.results_dir
     log_file = args.log_file
     use_cpu = args.use_cpu
-
+    print(f'use_cpu is set to {use_cpu}')
+    print(f'pretrained is set to {pretrained}')
     # if gen_csv:
     #     gen_csv_file(data_file, data_dir, file_ext, log_file)
 
@@ -241,6 +246,6 @@ if __name__ == "__main__":
     if not found:
         print(f'[INFO] Dataset could not be loaded.')
     else:     
-        device, model, criterion, optimizer = init_model(num_classes, pretrained)
-        model = train_model(model, criterion, optimizer, results_dir, num_examples, num_epochs=EPOCHS)
-        torch.save(model.state_dict(), model_path)
+        device, model, criterion, optimizer = init_model(num_classes, use_cpu, pretrained)
+        model, model_name = train_model(model, criterion, optimizer, results_dir, num_examples, num_epochs=EPOCHS)
+        torch.save(model.state_dict(), os.path.join(model_path, model_name.split(".")[0]))

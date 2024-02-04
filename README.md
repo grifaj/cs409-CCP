@@ -24,7 +24,7 @@ Several files and directories are required for training the model, so a script i
 
 Running the following command will begin training the CNN.
 
-- `python resnet_50.py <BATCH_SIZE> <EPOCHS> <IMAGE_SIZE> <MODEL_NAME> <data_dir> <file_ext> <test_size> <pretrained> <data_file> <model_path> <results_dir> <log_file> <use_cpu>`
+- `python resnet_50.py <BATCH_SIZE> <EPOCHS> <IMAGE_SIZE> <MODEL_NAME> <data_dir> <file_ext> <test_size> <data_file> <model_path> <results_dir> <log_file> -pretrained -use_cpu`
 
 `<BATCH_SIZE>` - the batch size to use for training (integer).
 
@@ -40,8 +40,6 @@ Running the following command will begin training the CNN.
 
 `<test_size>` - the proportion of images to use for testing and validation (float). Images are split into train, test and validation by splitting twice with `<test_size>`.
 
-`<pretrained>` - if the model should be trained using the pretrained model weights (bool). `False` forces the model to be trained from scratch.
-
 `<data_file>` - the name of the csv containing image paths and labels (string).
 
 `<model_path>` - the file where the trained model will be saved (string). Filename must end in `.pth` extension.
@@ -50,4 +48,6 @@ Running the following command will begin training the CNN.
 
 `<log_file>` - the name of the text file where training errors will be recorded (string).
 
-`<use_cpu>` - if the training process should utilise the CPU only (bool). Set to `False` if CUDA/GPU functionality is available and preferred.
+`-pretrained` - include if the model should be trained using the pretrained model weights (bool). `False` forces the model to be trained from scratch.
+
+`-use_cpu` - include if the training process should utilise the CPU only (bool). Set to `False` if CUDA/GPU functionality is available and preferred.
