@@ -101,21 +101,29 @@ cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, in
 
     cvtColor(img, img, cv::COLOR_GRAY2BGR);
 
-
+    std::string path = "..\\..\\..\\smiley.jpg";
+    cv::Mat smiley = cv::imread(path);
+    
     for (size_t i = 0; i < finalBoxes.size(); i++)
     {
         rectangle(colImg, finalBoxes[i].tl(), finalBoxes[i].br(), cv::Scalar(0, 0, 255), 2);
 
-        cv::Point bottomLeft = finalBoxes[i].tl() + cv::Point(0, finalBoxes[i].height);
+        /*cv::Point bottomLeft = finalBoxes[i].tl() + cv::Point(0, finalBoxes[i].height);*/
+        cv::resize(smiley, smiley, cv::Size(finalBoxes[i].width, finalBoxes[i].height), 0, 0, cv::INTER_CUBIC);
 
-        cv::putText(colImg,
-            "A",
-            bottomLeft, // Coordinates (Bottom-left corner of the text string in the image)
-            cv::FONT_HERSHEY_COMPLEX_SMALL, // Font
-            1.0, // Scale. 2.0 = 2x bigger
-            cv::Scalar(0, 0, 0), // BGR Color
-            1, // Line Thickness (Optional)
-            cv::LINE_AA); // Anti-alias (Optional, see version note)
+
+        cv::Mat insetImage(colImg, finalBoxes[i]);
+        smiley.copyTo(insetImage);
+
+        //cv::putText(colImg,
+        //    "A",
+        //    bottomLeft, // Coordinates (Bottom-left corner of the text string in the image)
+        //    cv::FONT_HERSHEY_COMPLEX_SMALL, // Font
+        //    5.0, // Scale. 2.0 = 2x bigger
+        //    cv::Scalar(0, 0, 0), // BGR Color
+        //    1);
+
+        
 
     }
 
@@ -173,18 +181,18 @@ cv::Mat captureImage(cv::Mat img) {
     return mserDetect;
 }
 
-//int main(int, char**) {
-//    std::string path = "..\\..\\..\\seal script image 14.jpg";
-//    cv::Mat img = cv::imread(path);
-//    double factor = 700.0 / img.size().height;
-//    cv::resize(img, img, cv::Size(), factor, factor, cv::INTER_CUBIC);
-//
-//    
-//
-//
-//    cv::Mat Image = captureImage(img);
-//
-//    cv::imshow("Image", Image);
-//
-//    cv::waitKey(0);
-//}
+int main(int, char**) {
+    std::string path = "..\\..\\..\\seal script image 14.jpg";
+    cv::Mat img = cv::imread(path);
+    double factor = 700.0 / img.size().height;
+    cv::resize(img, img, cv::Size(), factor, factor, cv::INTER_CUBIC);
+
+    
+
+
+    cv::Mat Image = captureImage(img);
+
+    cv::imshow("Image", Image);
+
+    cv::waitKey(0);
+}
