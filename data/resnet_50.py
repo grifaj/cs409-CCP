@@ -8,6 +8,9 @@ import pandas as pd
 # import traceback
 import argparse
 from tqdm import tqdm
+from config import Config_resnet as C
+import logging
+from datetime import datetime
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
@@ -20,6 +23,16 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 # from torchsummary import summary
 
+
+# initialise logger
+logging.basicConfig(filename=C.LOG_PATH, encoding="utf-8", level=logging.DEBUG, 
+                    format="[%(asctime)s] [%(levelname)s] %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S")
+logging.getLogger().addHandler(logging.StreamHandler())
+logging.info("==========Logger started===========")
+
+# change model download path to /large
+os.environ["TORCH_HOME"] = C.TORCH_MODEL_CACHE
 
 ## Initialize data
 class CharactersDataSet(Dataset):
@@ -45,24 +58,25 @@ class CharactersDataSet(Dataset):
     return image, label
   
 
-def init_dataset(data_file, test_size=0.25):
+def init_dataset():
     '''
         Initializes dataset and dataloaders used for training model. Reads data from CSV file <data_file>. Splits data into train, validation and test sets.
     '''
-    if not os.path.exists(data_file):
+    logging.info("Loading dataset")
+    if not os.path.exists(C.DATA_PATH):
         print('[INFO] Data csv does not exist.')
-        return False, None, None, None, None
+        return None, None
     else:
-        data = pd.read_csv(data_file, names=['file_path', 'label'])
+        data = pd.read_csv(C.DATA_PATH, names=['file_path', 'label'])
         x = data['file_path']
         y = data['label']
         num_classes = np.unique(y)[-1]
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=4)
-        x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=test_size, random_state=4)
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=C.TEST_SIZE, random_state=4)
+        x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=C.TEST_SIZE, random_state=4)
 
 
         transformation = transforms.Compose([
-                transforms.Resize((IMAGE_SIZE,IMAGE_SIZE)),
+                transforms.Resize((C.IMAGE_SIZE,C.IMAGE_SIZE)),
                 transforms.ToTensor(),
         #         transforms.Normalize(mean=MEAN, std=STD),
             ])
@@ -72,21 +86,19 @@ def init_dataset(data_file, test_size=0.25):
         test_data_object = CharactersDataSet(x_test, y_test, transformation)
 
         train_loader = torch.utils.data.DataLoader(train_data_object,
-                                                batch_size=BATCH_SIZE,
-                                                shuffle=True)
+                                                batch_size=C.BATCH_SIZE,
+                                                shuffle=C.SHUFFLE_DATA)
         val_loader = torch.utils.data.DataLoader(val_data_object,
-                                                batch_size=BATCH_SIZE,
-                                                shuffle=True)
+                                                batch_size=C.BATCH_SIZE,
+                                                shuffle=C.SHUFFLE_DATA)
         test_loader = torch.utils.data.DataLoader(test_data_object,
-                                                batch_size=BATCH_SIZE,
-                                                shuffle=True)
+                                                batch_size=C.BATCH_SIZE,
+                                                shuffle=C.SHUFFLE_DATA)
         
         dataloaders = {'train': train_loader, 'validation': val_loader, 'test': test_loader}
-        datasets = {'train': train_data_object, 'validation': val_data_object, 'test': test_data_object}
+        # datasets = {'train': train_data_object, 'validation': val_data_object, 'test': test_data_object}
 
-        print('[INFO] Data loaded successfully.')
-
-    return True, dataloaders, datasets, num_classes, len(x)
+    return dataloaders, num_classes
 
 
 def init_model(num_classes, use_cpu=False, pretrained=False):
@@ -101,9 +113,12 @@ def init_model(num_classes, use_cpu=False, pretrained=False):
     
     ## Retrieve Resnet50 model
     if pretrained:
-        model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT).to(device)
+        weights = models.ResNet50_Weights.DEFAULT
+        model = models.resnet50(weights=weights).to(device)
     else:
         model = models.resnet50().to(device)
+
+    
         
     for param in model.parameters():
         param.requires_grad = False  
@@ -111,7 +126,7 @@ def init_model(num_classes, use_cpu=False, pretrained=False):
     if device.type == "cuda":
         model.cuda()
 
-    print(f'[INFO] Using device: {device.type}')
+    logging.info(f"Using device: {device.type}")
 
     ## Initialize model
     model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False).to(device)
@@ -125,127 +140,140 @@ def init_model(num_classes, use_cpu=False, pretrained=False):
                 nn.Linear(1600, num_classes)).to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.fc.parameters())
+    optimisers = [
+        optim.Adam(model.parameters(), lr=C.LEARNING_RATE, betas=C.ADAM_BETA),
+    ]
 
-    return device, model, criterion, optimizer
+    return model, criterion, optimisers, device
 
+
+## Save model dictionaries
+def save_model(model:nn.Module, optimisers, epoch:int):
+    torch.save({
+        "epoch": epoch,
+        "model_state_dict": model.state_dict(),
+        "optimiser_a": optimisers[0].state_dict(),
+        "optimiser_b": optimisers[1].state_dict(),
+    }, C.CHECKPOINT_PATH + f"CK-{epoch}.pt")
+
+def load_model(model:nn.Module, optimisers, load_from:str):
+    logging.info(f"Loading checkpoint {load_from}")
+    checkpoint = torch.load(load_from)
+    model.load_state_dict(checkpoint["model_state_dict"])
+    optimisers[0].load_state_dict(checkpoint["optimiser_a"])
+    optimisers[1].load_state_dict(checkpoint["optimiser_b"])
+    epoch = checkpoint["epoch"]
+    logging.info("Loading done")
+    
+    return epoch
 
 
 ## Train model
-def train_model(model, criterion, optimizer, training_results_dir, num_examples, num_epochs=12):
-    file_name = f'{MODEL_NAME}_B{BATCH_SIZE}_E{EPOCHS}_I{IMAGE_SIZE}_N{num_examples}.txt' # make file to store training results
-    print(f'[INFO] New file created: {file_name}')
-    with open(os.path.join(training_results_dir, file_name), 'w') as f:
-        for epoch in tqdm(range(num_epochs)):
-            print('Epoch {}/{}'.format(epoch+1, num_epochs))
-            f.write('Epoch {}/{}\n'.format(epoch+1, num_epochs))
-            print('-' * 10)
-            f.write('-' * 10+'\n')
-
-            for phase in ['train', 'validation']:
-                if phase == 'train':
-                    model.train()
-                else:
-                    model.eval()
-
-                running_loss = 0.0
-                running_corrects = 0
-
-                for inputs, labels in dataloaders[phase]:
-                    inputs = inputs.to(device)
-                    labels = labels.to(device)
-
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
-
-                    if phase == 'train':
-                        optimizer.zero_grad()
-                        loss.backward()
-                        optimizer.step()
-
-                    _, preds = torch.max(outputs, 1)
-                    running_loss += loss.item() * inputs.size(0)
-                    running_corrects += torch.sum(preds == labels.data)
-
-                epoch_loss = running_loss / datasets[phase].__len__()
-                epoch_acc = running_corrects.double() / datasets[phase].__len__()
-
-                print('{} loss: {:.4f}, acc: {:.4f}'.format(phase,
-                                                            epoch_loss,
-                                                            epoch_acc))
-                f.write('{} loss: {:.4f}, acc: {:.4f}\n'.format(phase,
-                                                            epoch_loss,
-                                                            epoch_acc))
-        f.close()
+def train_model(model, dataloaders, optimisers, criterion, epoch, device):
+    def zero_grads(optimisers):
+        for o in optimisers: o.zero_grad()
+        
+    def steps(optimisers):
+        for o in optimisers: o.step()
+    # if debug:
+    #     file_name = 'debug.txt'
+    # else:
+        # file_name = f'{C.MODEL_NAME}_B{C.BATCH_SIZE}_E{C.EPOCHS}_I{C.IMAGE_SIZE}_N{num_examples}.txt' # make file to store training results
     
-    return model, file_name
+    if C.CHECKPOINT_PATH[-1] != "/": C.CHECKPOINT_PATH += "/"
+    C.CHECKPOINT_PATH += datetime.today().strftime('%Y-%m-%d') + "/"
+    os.makedirs(C.CHECKPOINT_PATH, exist_ok=True)
+    logging.debug("Checkpoint files ok")
+    
+    # print(f'[INFO] New file created: {file_name}')
+    # with open(os.path.join(training_results_dir, file_name), 'w') as f:
+    logging.info("Starting training")
+    for epoch in range(C.EPOCHS):
+        # print('Epoch {}/{}'.format(epoch+1, C.EPOCHS))
+        # f.write('Epoch {}/{}\n'.format(epoch+1, C.EPOCHS))
+        # print('-' * 10)
+        # f.write('-' * 10+'\n')
 
-def gen_csv_file(data_file, data_dir, file_ext, log_file):
-    with open(data_file, 'w', newline="") as csv_file:
-        csv_writer = csv.writer(csv_file, delimiter=",")
-        for (root,dirs,files) in os.walk(data_dir, topdown=True):
-            print(root)
-            if len(root.split("/")[1]) == 0: # the root directory, no images here so skip
-                continue
-            label = root.split("/")[1] # sub-directory names are class labels
+        for phase in ['train', 'validation']:
+            if phase == 'train':
+                model.train()
+                logging.debug(f"[Epoch {epoch}/{C.EPOCHS}] Training phase")
+            else:
+                model.eval()
+                logging.debug(f"[Epoch {epoch}/{C.EPOCHS}] Testing phase")
 
-            for file in glob.glob(root + '/*' + file_ext):
-                
-                try: # check that image can be opened - add additional image requirement checks here
-                    img = Image.open(file).convert("L")
-                    im = np.asarray(img)
-                    csv_writer.writerow([file, label])
-                    print(file)
-                except Exception as e:
-                    with open(os.path.join(data_dir, log_file), 'a') as f:
-                        f.write(str(e)+"\n")
-    #                 print(str(traceback.format_exc()))
-                
-        csv_file.close()
+            running_loss = 0.0
+            running_corrects = 0
+
+            for inputs, labels in dataloaders[phase]:
+                inputs = inputs.to(device)
+                labels = labels.to(device)
+
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+
+                if phase == 'train':
+                    zero_grads(optimisers)
+                    loss.backward()
+                    steps(optimisers)
 
 
-if __name__ == "__main__": 
+                _, preds = torch.max(outputs, 1)
+                running_loss += loss.item() * inputs.size(0)
+                running_corrects += torch.sum(preds == labels.data)
+
+                if phase == "train" and (epoch + 1) % 20 == 0:
+                    torch.save({
+                        'epoch': epoch,
+                        'model_state_dict': model.state_dict(),
+                        'optimizer_state_dict': optimisers.state_dict(),
+                        'loss': running_loss,
+                        }, C.CHECKPOINT_PATH + f"res_{epoch}.pth")
+
+            epochLoss = running_loss / datasets[phase].__len__()
+            epochAccuracy = running_corrects.double() / datasets[phase].__len__()
+
+            logging.info(f"[Epoch {epoch}/{C.EPOCHS}] {['TRAIN', 'TEST'][phase]} [Loss {epochLoss:.4f}] [Accuracy {epochAccuracy:.4f}]")
+    
+    return model
+
+
+def main(): 
     parser = argparse.ArgumentParser()
-    parser.add_argument("BATCH_SIZE", type=int)
-    parser.add_argument("EPOCHS", type=int)
-    parser.add_argument("IMAGE_SIZE", type=int)
-    parser.add_argument("MODEL_NAME", type=str)
-    parser.add_argument("data_dir", type=str)
-    parser.add_argument("file_ext", type=str)
-    parser.add_argument("test_size", type=float)
-    parser.add_argument("data_file", type=str)
-    parser.add_argument("model_path", type=str)
-    parser.add_argument("results_dir", type=str)
-    parser.add_argument("log_file", type=str)
     parser.add_argument("-pretrained", action="store_true")
     parser.add_argument("-use_cpu", action="store_true")
 
     args = parser.parse_args()
 
-    ## Initialise model parameters
-    BATCH_SIZE = args.BATCH_SIZE
-    EPOCHS = args.EPOCHS
-    IMAGE_SIZE = args.IMAGE_SIZE
-    MODEL_NAME = args.MODEL_NAME
-    data_dir = args.data_dir
-    file_ext = args.file_ext
-    test_size = args.test_size
     pretrained = args.pretrained
-    data_file = args.data_file
-    model_path = args.model_path
-    results_dir = args.results_dir
-    log_file = args.log_file
     use_cpu = args.use_cpu
-    print(f'use_cpu is set to {use_cpu}')
-    print(f'pretrained is set to {pretrained}')
-    # if gen_csv:
-    #     gen_csv_file(data_file, data_dir, file_ext, log_file)
 
-    found, dataloaders, datasets, num_classes, num_examples = init_dataset(data_file, test_size)
+    logging.info("Loading dataset")
+    logging.info("Loading data loaders")
+    dataloaders, num_classes = init_dataset()
+    logging.info(f"Num classes {num_classes}")
+    logging.info("Done")
+    epoch=0
+    logging.info("Loading ResNet50")
+    model, criterion, optimisers, device = init_model(num_classes, use_cpu, pretrained)
+    if C.LOAD_CHECKPOINT_PATH != "":
+        epoch = load_model(model, 
+                           optimisers, 
+                           C.LOAD_CHECKPOINT_PATH)  
+    logging.info("Done")
     
-    if not found:
-        print(f'[INFO] Dataset could not be loaded.')
-    else:     
-        device, model, criterion, optimizer = init_model(num_classes, use_cpu, pretrained)
-        model, model_name = train_model(model, criterion, optimizer, results_dir, num_examples, num_epochs=EPOCHS)
-        torch.save(model.state_dict(), os.path.join(model_path, model_name.split(".")[0]))
+    logging.info("Start training")
+    model = train_model(model, 
+                dataloaders,
+                optimisers, 
+                criterion, 
+                epoch,
+                device)
+    logging.info("Finished, saving...")
+    save_model(model, optimisers, 
+               C.EPOCHS, 
+               C.CHECKPOINT_PATH + datetime.datetime.today().strftime('%Y-%m-%d') + "/FINISHED-")
+    logging.info("Exiting")
+
+if __name__=="__main__":
+    main()
