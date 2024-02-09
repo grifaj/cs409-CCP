@@ -33,7 +33,7 @@ class Config_resnet:
     # path to read file names from (needs to be in a train.csv format)
     DATA_PATH = "./trainData.csv"
     # path which pretrained torch weights are stored to
-    TORCH_MODEL_CACHE = "." #"/dcs/large/u2009169/torch-cache/"
+    TORCH_MODEL_CACHE = ""
     
     # batch size
     BATCH_SIZE = 4
@@ -52,7 +52,7 @@ class Config_resnet:
     # total training epochs
     EPOCHS = 200
     # path to save checkpoints
-    CHECKPOINT_PATH = "." #/dcs/large/seal-script-project-checkpoints/resnet50/"
+    CHECKPOINT_PATH = "/dcs/large/seal-script-project-checkpoints/resnet50/"
     # save checkpoint every n epochs
     SAVE_EVERY_N = 20
     # load model checkpoint path -- leave blank to not load

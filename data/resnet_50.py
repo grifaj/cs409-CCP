@@ -1,13 +1,12 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from PIL import Image
 import os
 import glob
 import csv
 import pandas as pd
 # import traceback
-import argparse
-from tqdm import tqdm
+# import argparse
+# from tqdm import tqdm
 from config import Config_resnet as C
 import logging
 from datetime import datetime
@@ -25,14 +24,15 @@ from sklearn.model_selection import train_test_split
 
 
 # initialise logger
-logging.basicConfig(filename=C.LOG_PATH, encoding="utf-8", level=logging.DEBUG, 
+logging.basicConfig(filename=C.LOG_PATH, encoding="utf-8", level=logging.INFO, 
                     format="[%(asctime)s] [%(levelname)s] %(message)s",
                     datefmt="%Y-%m-%d %H:%M:%S")
 logging.getLogger().addHandler(logging.StreamHandler())
 logging.info("==========Logger started===========")
 
 # change model download path to /large
-os.environ["TORCH_HOME"] = C.TORCH_MODEL_CACHE
+if C.TORCH_MODEL_CACHE:
+    os.environ["TORCH_HOME"] = C.TORCH_MODEL_CACHE
 
 ## Initialize data
 class CharactersDataSet(Dataset):
@@ -101,22 +101,22 @@ def init_dataset():
     return dataloaders, num_classes
 
 
-def init_model(num_classes, use_cpu=False, pretrained=False):
+def init_model(num_classes): #, use_cpu=False, pretrained=False):
     '''
     Initialize device for cuda and load resnet50 model.
     '''
     ## Initialize device for cuda
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    if use_cpu:
-        device = torch.device("cpu")
+    # if use_cpu:
+        # device = torch.device("cpu")
     
     ## Retrieve Resnet50 model
-    if pretrained:
-        weights = models.ResNet50_Weights.DEFAULT
-        model = models.resnet50(weights=weights).to(device)
-    else:
-        model = models.resnet50().to(device)
+    # if pretrained:
+    weights = models.ResNet50_Weights.DEFAULT
+    model = models.resnet50(weights=weights).to(device)
+    # else:
+    #     model = models.resnet50().to(device)
 
     
         
@@ -239,14 +239,14 @@ def train_model(model, dataloaders, optimisers, criterion, epoch, device):
 
 
 def main(): 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-pretrained", action="store_true")
-    parser.add_argument("-use_cpu", action="store_true")
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("-pretrained", action="store_true")
+    # parser.add_argument("-use_cpu", action="store_true")
 
-    args = parser.parse_args()
+    # args = parser.parse_args()
 
-    pretrained = args.pretrained
-    use_cpu = args.use_cpu
+    # pretrained = args.pretrained
+    # use_cpu = args.use_cpu
 
     logging.info("Loading dataset")
     logging.info("Loading data loaders")
@@ -255,7 +255,7 @@ def main():
     logging.info("Done")
     epoch=0
     logging.info("Loading ResNet50")
-    model, criterion, optimisers, device = init_model(num_classes, use_cpu, pretrained)
+    model, criterion, optimisers, device = init_model(num_classes)#, use_cpu, pretrained)
     if C.LOAD_CHECKPOINT_PATH != "":
         epoch = load_model(model, 
                            optimisers, 
