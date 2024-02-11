@@ -96,9 +96,9 @@ def init_dataset():
                                                 shuffle=C.SHUFFLE_DATA)
         
         dataloaders = {'train': train_loader, 'validation': val_loader, 'test': test_loader}
-        # datasets = {'train': train_data_object, 'validation': val_data_object, 'test': test_data_object}
+        datasets = {'train': train_data_object, 'validation': val_data_object, 'test': test_data_object}
 
-    return dataloaders, num_classes
+    return dataloaders, datasets, num_classes
 
 
 def init_model(num_classes): #, use_cpu=False, pretrained=False):
@@ -169,7 +169,7 @@ def load_model(model:nn.Module, optimisers, load_from:str):
 
 
 ## Train model
-def train_model(model, dataloaders, optimisers, criterion, epoch, device):
+def train_model(model, dataloaders, datasets, optimisers, criterion, epoch, device):
     def zero_grads(optimisers):
         for o in optimisers: o.zero_grad()
         
@@ -189,7 +189,7 @@ def train_model(model, dataloaders, optimisers, criterion, epoch, device):
     # with open(os.path.join(training_results_dir, file_name), 'w') as f:
     logging.info("Starting training")
     for epoch in range(C.EPOCHS):
-        # print('Epoch {}/{}'.format(epoch+1, C.EPOCHS))
+        print('Epoch {}/{}'.format(epoch+1, C.EPOCHS))
         # f.write('Epoch {}/{}\n'.format(epoch+1, C.EPOCHS))
         # print('-' * 10)
         # f.write('-' * 10+'\n')
@@ -250,29 +250,20 @@ def main():
 
     logging.info("Loading dataset")
     logging.info("Loading data loaders")
-    dataloaders, num_classes = init_dataset()
+    dataloaders, datasets, num_classes = init_dataset()
     logging.info(f"Num classes {num_classes}")
     logging.info("Done")
     epoch=0
     logging.info("Loading ResNet50")
     model, criterion, optimisers, device = init_model(num_classes)#, use_cpu, pretrained)
     if C.LOAD_CHECKPOINT_PATH != "":
-        epoch = load_model(model, 
-                           optimisers, 
-                           C.LOAD_CHECKPOINT_PATH)  
+        epoch = load_model(model, optimisers, C.LOAD_CHECKPOINT_PATH)  
     logging.info("Done")
     
     logging.info("Start training")
-    model = train_model(model, 
-                dataloaders,
-                optimisers, 
-                criterion, 
-                epoch,
-                device)
+    model = train_model(model, dataloaders, datasets, optimisers, criterion, epoch, device)
     logging.info("Finished, saving...")
-    save_model(model, optimisers, 
-               C.EPOCHS, 
-               C.CHECKPOINT_PATH + datetime.datetime.today().strftime('%Y-%m-%d') + "/FINISHED-")
+    save_model(model, optimisers, C.EPOCHS, C.CHECKPOINT_PATH + datetime.datetime.today().strftime('%Y-%m-%d') + "/FINISHED-")
     logging.info("Exiting")
 
 if __name__=="__main__":
