@@ -220,13 +220,13 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, epoch, devi
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
 
-                if phase == "train" and (epoch + 1) % 20 == 0:
-                    save_model(model, optimisers, epoch)
-
             epochLoss = running_loss / datasets[phase].__len__()
             epochAccuracy = running_corrects.double() / datasets[phase].__len__()
 
             logging.info(f"[Epoch {epoch+1}/{C.EPOCHS}] {phase} [Loss {epochLoss:.4f}] [Accuracy {epochAccuracy:.4f}]")
+
+            if phase == "train" and (epoch + 1) % 20 == 0:
+                    save_model(model, optimisers, epoch)
     
     return model
 
