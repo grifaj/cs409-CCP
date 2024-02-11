@@ -71,8 +71,8 @@ def init_dataset():
         x = data['file_path']
         y = data['label']
         num_classes = np.unique(y)[-1]
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=C.TEST_SIZE, random_state=4)
-        x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=C.TEST_SIZE, random_state=4)
+        x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=C.TEST_SIZE, random_state=4)
+        # x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=C.TEST_SIZE, random_state=4)
 
 
         transformation = transforms.Compose([
@@ -83,7 +83,7 @@ def init_dataset():
 
         train_data_object = CharactersDataSet(x_train, y_train, transformation)
         val_data_object = CharactersDataSet(x_val, y_val, transformation)
-        test_data_object = CharactersDataSet(x_test, y_test, transformation)
+        # test_data_object = CharactersDataSet(x_test, y_test, transformation)
 
         train_loader = torch.utils.data.DataLoader(train_data_object,
                                                 batch_size=C.BATCH_SIZE,
@@ -91,12 +91,12 @@ def init_dataset():
         val_loader = torch.utils.data.DataLoader(val_data_object,
                                                 batch_size=C.BATCH_SIZE,
                                                 shuffle=C.SHUFFLE_DATA)
-        test_loader = torch.utils.data.DataLoader(test_data_object,
-                                                batch_size=C.BATCH_SIZE,
-                                                shuffle=C.SHUFFLE_DATA)
+        # test_loader = torch.utils.data.DataLoader(test_data_object,
+        #                                         batch_size=C.BATCH_SIZE,
+        #                                         shuffle=C.SHUFFLE_DATA)
         
-        dataloaders = {'train': train_loader, 'validation': val_loader, 'test': test_loader}
-        datasets = {'train': train_data_object, 'validation': val_data_object, 'test': test_data_object}
+        dataloaders = {'train': train_loader, 'validation': val_loader} #, 'test': test_loader}
+        datasets = {'train': train_data_object, 'validation': val_data_object} # 'test': test_data_object}
 
     return dataloaders, datasets, num_classes
 
@@ -197,10 +197,10 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, epoch, devi
         for phase in ['train', 'validation']:
             if phase == 'train':
                 model.train()
-                logging.debug(f"[Epoch {epoch}/{C.EPOCHS}] Training phase")
+                logging.debug(f"[Epoch {epoch+1}/{C.EPOCHS}] Training phase")
             else:
                 model.eval()
-                logging.debug(f"[Epoch {epoch}/{C.EPOCHS}] Testing phase")
+                logging.debug(f"[Epoch {epoch+1}/{C.EPOCHS}] Validation phase")
 
             running_loss = 0.0
             running_corrects = 0
@@ -233,7 +233,7 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, epoch, devi
             epochLoss = running_loss / datasets[phase].__len__()
             epochAccuracy = running_corrects.double() / datasets[phase].__len__()
 
-            logging.info(f"[Epoch {epoch}/{C.EPOCHS}] {['TRAIN', 'TEST'][phase]} [Loss {epochLoss:.4f}] [Accuracy {epochAccuracy:.4f}]")
+            logging.info(f"[Epoch {epoch+1}/{C.EPOCHS}] {phase} [Loss {epochLoss:.4f}] [Accuracy {epochAccuracy:.4f}]")
     
     return model
 
