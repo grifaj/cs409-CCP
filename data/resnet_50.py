@@ -152,8 +152,7 @@ def save_model(model:nn.Module, optimisers, epoch:int):
     torch.save({
         "epoch": epoch,
         "model_state_dict": model.state_dict(),
-        "optimiser_a": optimisers[0].state_dict(),
-        "optimiser_b": optimisers[1].state_dict(),
+        "optimiser_a": optimisers[0].state_dict()
     }, C.CHECKPOINT_PATH + f"CK-{epoch}.pt")
 
 def load_model(model:nn.Module, optimisers, load_from:str):
@@ -161,7 +160,6 @@ def load_model(model:nn.Module, optimisers, load_from:str):
     checkpoint = torch.load(load_from)
     model.load_state_dict(checkpoint["model_state_dict"])
     optimisers[0].load_state_dict(checkpoint["optimiser_a"])
-    optimisers[1].load_state_dict(checkpoint["optimiser_b"])
     epoch = checkpoint["epoch"]
     logging.info("Loading done")
     
@@ -223,12 +221,7 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, epoch, devi
                 running_corrects += torch.sum(preds == labels.data)
 
                 if phase == "train" and (epoch + 1) % 20 == 0:
-                    torch.save({
-                        'epoch': epoch,
-                        'model_state_dict': model.state_dict(),
-                        'optimizer_state_dict': optimisers.state_dict(),
-                        'loss': running_loss,
-                        }, C.CHECKPOINT_PATH + f"res_{epoch}.pth")
+                    save_model(model, optimisers, epoch)
 
             epochLoss = running_loss / datasets[phase].__len__()
             epochAccuracy = running_corrects.double() / datasets[phase].__len__()
