@@ -51,8 +51,9 @@ class CharactersDataSet(Dataset):
     return self.x.shape[0]
 
   def __getitem__(self, index):
-    # note that this isn't randomly selecting. It's a simple get a single item that represents an x and y
+    
     image = Image.open(self.x.iloc[index]).convert("L")
+    image = Image.fromarray(np.repeat(np.asarray(image)[..., np.newaxis], 3, -1)) # Stack grayscle images to create 3 channel image
     label = self.y.iloc[index]-1 # Cuda requires class indexing to start from 0
     
     if self.transform:
@@ -77,13 +78,14 @@ def init_dataset():
         x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=C.TEST_SIZE, random_state=4)
         # x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=C.TEST_SIZE, random_state=4)
 
-
-        transformation = transforms.Compose([
-                transforms.Resize(256),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ])
+        weights = models.ResNet50_Weights.DEFAULT
+        transformation = weights.transforms()
+        # transformation = transforms.Compose([
+        #         transforms.Resize(256),
+        #         transforms.CenterCrop(224),
+        #         transforms.ToTensor(),
+        #         transforms.Normalize(mean=[0.485], std=[0.229]),
+        #     ])
 
         train_data_object = CharactersDataSet(x_train, y_train, transformation)
         val_data_object = CharactersDataSet(x_val, y_val, transformation)
@@ -112,6 +114,8 @@ def init_model(num_classes, pretrained=True): #, use_cpu=False, pretrained=False
     
     ## Retrieve Resnet50 model
     if pretrained:
+        weights = models.ResNet50_Weights.DEFAULT
+        # print(weights.transforms)
         model = models.resnet50(weights = models.ResNet50_Weights.DEFAULT)
     else:
         model = models.resnet50()
@@ -123,14 +127,15 @@ def init_model(num_classes, pretrained=True): #, use_cpu=False, pretrained=False
     logging.info(f"Using device: {device.type}")
 
     # Initialize model
-    model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False).to(device)
+    # model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False).to(device)
 
     # numFcInputs = model.fc[0].in_features
 
+
+
     model.fc = nn.Sequential(
                 nn.Linear(2048, 1600),
-                nn.ReLU(inplace=True),
-                nn.Dropout(0.2),
+                nn.RReLU(inplace=True),
                 nn.Linear(1600, num_classes)).to(device)
 
     criterion = nn.CrossEntropyLoss()
@@ -139,6 +144,8 @@ def init_model(num_classes, pretrained=True): #, use_cpu=False, pretrained=False
     ]
 
     model.to(device)
+
+    # logging.info(model)
 
     return model, criterion, optimisers
 
@@ -244,7 +251,7 @@ def main():
     logging.info("Done")
     epoch=0
     logging.info("Loading ResNet50")
-    model, criterion, optimisers = init_model(num_classes, pretrained=False)#, use_cpu, pretrained)
+    model, criterion, optimisers = init_model(num_classes, pretrained=True)#, use_cpu, pretrained)
     if C.LOAD_CHECKPOINT_PATH != "":
         epoch = load_model(model, optimisers, C.LOAD_CHECKPOINT_PATH)  
     logging.info("Done")
