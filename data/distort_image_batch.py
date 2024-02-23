@@ -1,4 +1,4 @@
-from click import edit
+# from click import edit
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib as mpl
@@ -20,7 +20,8 @@ from character_translation_load import DatasetLoad
 
 
 # CONSTANTS
-DATA_DIR = '/dcs/large/u2009169/seal-script-images'
+DATA_DIR = '/dcs/20/u2002183/cs409-CCP-1/seal-script-images'
+SAVE_DIR = '/dcs/large/u2009169/seal-script-images'
 IMG_FILETYPE = '.png'
 test = True
 
@@ -28,7 +29,7 @@ test = True
 edit_index = 10
 
 # The number of variants to obtain for each character
-DESIRED_VARIANTS = 50
+DESIRED_VARIANTS = 100
 
 
 def load_image(file):
@@ -233,7 +234,7 @@ def add_effects(im):
     effects = { # CAN ADD HORIZONTAL FLIP
         1: rotate_char,
         2: remove_block,
-        3: phase_swap,
+        #3: phase_swap,
         4: flip_image,
         5: add_gaussian_blur,
         6: add_gaussian_noise,
@@ -245,7 +246,7 @@ def add_effects(im):
     ]
     
     effect_pixel = [
-        phase_swap, add_gaussian_blur, add_gaussian_noise
+        add_gaussian_blur, add_gaussian_noise
     ]
         
     numTransformEffects = random.randint(0, len(effect_transform))
@@ -300,16 +301,21 @@ def get_data_csv_override(edit_index):
 def main(start_index=1):
     if os.path.exists(os.path.join(DATA_DIR, 'trainData.csv')):
         df = pd.read_csv(os.path.join(DATA_DIR,'trainData.csv'), sep=",", names = ["img", "label"])
+        labels = np.unique(np.asarray(df["label"], dtype=int))
         name = df[df["label"] == 1]["img"][0][:]
         # Loop over characters
-        for i in tqdm(range(start_index, len(df)+1)):
+        print(labels)
+        for i in labels[labels >= start_index]:
+            print(i)
             variant_num = 1
 
             # Number of images currently in folder for character i
-            num_variants = len(df[df["label"] == i])
+            # num_variants = len(df[df["label"] == i])
+            directory = SAVE_DIR + '/' + str(i) + '/'
+            num_variants = len([name for name in os.listdir(directory) if (os.path.isfile(os.path.join(directory, name)) and IMG_FILETYPE in name)])
 
             # Calculate number of variant images to make for each image in folder
-            div = num_variants
+            div = len(df[df["label"] == i])
             num = DESIRED_VARIANTS - num_variants
             if num <= 0:
                 variants_to_make = [0 for _ in range(num_variants)]
@@ -317,11 +323,11 @@ def main(start_index=1):
                 variants_to_make = ([num // div + (1 if x < num % div else 0)  for x in range (div)])
 
             # Loop over images in character folder
-            for j in range(num_variants):
+            for j in range(div):
                 # Make required number of variants for each image
                 for k in range(variants_to_make[j]):
                     # Make filename for new image
-                    variant_filename = DATA_DIR + '/' + str(i) + '/' + str(i) + '_' + str(num_variants+variant_num) + '.png'
+                    variant_filename = SAVE_DIR + '/' + str(i) + '/' + str(i) + '_' + str(num_variants+variant_num) + IMG_FILETYPE
 
                     # Make new variant image
                     make_variant(df[df["label"] == i].iloc[j]["img"], variant_filename)
@@ -334,6 +340,7 @@ def main(start_index=1):
         
         
 if __name__ == "__main__":
-    edit_index = 240+110+20
-    main(edit_index)
+    start_index = 0
+    get_data_csv_override(1076)
+    main(start_index)
         

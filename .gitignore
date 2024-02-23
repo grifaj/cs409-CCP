@@ -6,6 +6,8 @@ data/MASTER/
 data/test_ims/*/
 data/source_2/
 data/test/
+seal-script-images-raw/
+source/
 
 **/__pycache__
 

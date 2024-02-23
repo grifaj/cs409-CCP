@@ -30,6 +30,9 @@ logging.basicConfig(filename=C.LOG_PATH, encoding="utf-8", level=logging.INFO,
 logging.getLogger().addHandler(logging.StreamHandler())
 logging.info("==========Logger started===========")
 
+## Initialize device for cuda
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 # change model download path to /large
 if C.TORCH_MODEL_CACHE:
     os.environ["TORCH_HOME"] = C.TORCH_MODEL_CACHE
@@ -78,7 +81,7 @@ def init_dataset():
         transformation = transforms.Compose([
                 transforms.Resize((C.IMAGE_SIZE,C.IMAGE_SIZE)),
                 transforms.ToTensor(),
-        #         transforms.Normalize(mean=MEAN, std=STD),
+                # transforms.Normalize(mean=MEAN, std=STD),
             ])
 
         train_data_object = CharactersDataSet(x_train, y_train, transformation)
@@ -101,35 +104,33 @@ def init_dataset():
     return dataloaders, datasets, num_classes
 
 
-def init_model(num_classes): #, use_cpu=False, pretrained=False):
+def init_model(num_classes, pretrained=True): #, use_cpu=False, pretrained=False):
     '''
     Initialize device for cuda and load resnet50 model.
     '''
-    ## Initialize device for cuda
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    # if use_cpu:
-        # device = torch.device("cpu")
     
     ## Retrieve Resnet50 model
-    # if pretrained:
-    weights = models.ResNet50_Weights.DEFAULT
-    model = models.resnet50(weights=weights).to(device)
-    # else:
-    #     model = models.resnet50().to(device)
+    if pretrained:
+        model = models.resnet50(weights = models.ResNet50_Weights.DEFAULT)
+    else:
+        model = models.resnet50()
 
+    # add a conv layer to push our 128*128*1 images into vgg's 224*224*3
+    preLayer = [
+        nn.Conv2d(1, 3, kernel_size=3, stride=1, padding=1),
+        nn.ReLU(inplace=True)
+    ]
+    preLayer.extend(list(model.features)) # type:ignore
+    model.features = nn.Sequential(*preLayer)
     
-        
-    for param in model.parameters():
-        param.requires_grad = False  
-        
-    if device.type == "cuda":
-        model.cuda()
+    # freze
+    for param in model.features[1:].parameters():
+        param.requires_grad = False 
 
     logging.info(f"Using device: {device.type}")
 
     ## Initialize model
-    model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False).to(device)
+    # model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False).to(device)
 
     # numFcInputs = model.fc[0].in_features
 
@@ -144,7 +145,9 @@ def init_model(num_classes): #, use_cpu=False, pretrained=False):
         optim.Adam(model.parameters(), lr=C.LEARNING_RATE, betas=C.ADAM_BETA),
     ]
 
-    return model, criterion, optimisers, device
+    model.to(device)
+
+    return model, criterion, optimisers
 
 
 ## Save model dictionaries
@@ -167,7 +170,7 @@ def load_model(model:nn.Module, optimisers, load_from:str):
 
 
 ## Train model
-def train_model(model, dataloaders, datasets, optimisers, criterion, epoch, device):
+def train_model(model, dataloaders, datasets, optimisers, criterion, epoch):
     def zero_grads(optimisers):
         for o in optimisers: o.zero_grad()
         
@@ -248,13 +251,13 @@ def main():
     logging.info("Done")
     epoch=0
     logging.info("Loading ResNet50")
-    model, criterion, optimisers, device = init_model(num_classes)#, use_cpu, pretrained)
+    model, criterion, optimisers = init_model(num_classes, pretrained=False)#, use_cpu, pretrained)
     if C.LOAD_CHECKPOINT_PATH != "":
         epoch = load_model(model, optimisers, C.LOAD_CHECKPOINT_PATH)  
     logging.info("Done")
     
     logging.info("Start training")
-    model = train_model(model, dataloaders, datasets, optimisers, criterion, epoch, device)
+    model = train_model(model, dataloaders, datasets, optimisers, criterion, epoch)
     logging.info("Finished, saving...")
     save_model(model, optimisers, C.EPOCHS, C.CHECKPOINT_PATH + datetime.datetime.today().strftime('%Y-%m-%d') + "/FINISHED-")
     logging.info("Exiting")

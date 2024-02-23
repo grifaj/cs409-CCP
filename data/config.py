@@ -36,7 +36,7 @@ class Config_resnet:
     TORCH_MODEL_CACHE = ""
     
     # batch size
-    BATCH_SIZE = 4
+    BATCH_SIZE = 18
     # shuffle order of data in torch data loader
     SHUFFLE_DATA = True 
     # proportion of data for testing
@@ -50,7 +50,7 @@ class Config_resnet:
     ADAM_BETA = (0.5, 0.99)
     
     # total training epochs
-    EPOCHS = 200
+    EPOCHS = 150
     # path to save checkpoints
     CHECKPOINT_PATH = "/dcs/large/seal-script-project-checkpoints/resnet50/"
     # save checkpoint every n epochs
