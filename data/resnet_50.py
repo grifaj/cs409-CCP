@@ -79,9 +79,10 @@ def init_dataset():
 
 
         transformation = transforms.Compose([
-                transforms.Resize((C.IMAGE_SIZE,C.IMAGE_SIZE)),
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
                 transforms.ToTensor(),
-                # transforms.Normalize(mean=MEAN, std=STD),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ])
 
         train_data_object = CharactersDataSet(x_train, y_train, transformation)
@@ -115,22 +116,14 @@ def init_model(num_classes, pretrained=True): #, use_cpu=False, pretrained=False
     else:
         model = models.resnet50()
 
-    # add a conv layer to push our 128*128*1 images into vgg's 224*224*3
-    preLayer = [
-        nn.Conv2d(1, 3, kernel_size=3, stride=1, padding=1),
-        nn.ReLU(inplace=True)
-    ]
-    preLayer.extend(list(model.features)) # type:ignore
-    model.features = nn.Sequential(*preLayer)
     
-    # freze
-    for param in model.features[1:].parameters():
+    for param in model.parameters():
         param.requires_grad = False 
 
     logging.info(f"Using device: {device.type}")
 
-    ## Initialize model
-    # model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False).to(device)
+    # Initialize model
+    model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False).to(device)
 
     # numFcInputs = model.fc[0].in_features
 
