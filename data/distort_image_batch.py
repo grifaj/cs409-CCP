@@ -20,8 +20,12 @@ from character_translation_load import DatasetLoad
 
 
 # CONSTANTS
-DATA_DIR = '/dcs/20/u2002183/cs409-CCP-1/seal-script-images'
-SAVE_DIR = '/dcs/large/u2009169/seal-script-images'
+
+# Directory where raw scraped images are stored
+DATA_DIR = './source'
+
+# Directory to save newly distorted images
+SAVE_DIR = './test'
 IMG_FILETYPE = '.png'
 test = True
 
@@ -310,8 +314,12 @@ def main(start_index=1):
             variant_num = 1
 
             # Number of images currently in folder for character i
-            # num_variants = len(df[df["label"] == i])
+            # Make character folder if not exists
             directory = SAVE_DIR + '/' + str(i) + '/'
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
+            # Get number of existing variant images for character
             num_variants = len([name for name in os.listdir(directory) if (os.path.isfile(os.path.join(directory, name)) and IMG_FILETYPE in name)])
 
             # Calculate number of variant images to make for each image in folder
@@ -340,7 +348,7 @@ def main(start_index=1):
         
         
 if __name__ == "__main__":
-    start_index = 0
+    start_index = 1075
     get_data_csv_override(1076)
     main(start_index)
         

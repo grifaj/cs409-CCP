@@ -37,5 +37,5 @@ class DatasetLoad():
         return toCsv
 
 
-ds = DatasetLoad('./source', 2, 'trainData.csv').createCsv()
-print(ds)
+# ds = DatasetLoad('./source', 2, 'trainData.csv').createCsv()
+# print(ds)
