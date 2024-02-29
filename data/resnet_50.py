@@ -6,7 +6,7 @@ import csv
 import pandas as pd
 # import traceback
 # import argparse
-# from tqdm import tqdm
+from tqdm import tqdm
 from config import Config_resnet as C
 import logging
 from datetime import datetime
@@ -32,6 +32,8 @@ logging.info("==========Logger started===========")
 
 ## Initialize device for cuda
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+logging.info(torch.cuda.is_available())
+print((torch.cuda.is_available()))
 
 # change model download path to /large
 if C.TORCH_MODEL_CACHE:
@@ -120,11 +122,12 @@ def init_model(num_classes, pretrained=True): #, use_cpu=False, pretrained=False
     else:
         model = models.resnet50()
 
-    
-    for param in model.parameters():
-        param.requires_grad = False 
+    if pretrained:
+        for param in model.parameters():
+            param.requires_grad = False 
 
     logging.info(f"Using device: {device.type}")
+    logging.info(f"Pretrained: {pretrained}")
 
     # Initialize model
     # model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False).to(device)
@@ -132,11 +135,14 @@ def init_model(num_classes, pretrained=True): #, use_cpu=False, pretrained=False
     # numFcInputs = model.fc[0].in_features
 
 
-
     model.fc = nn.Sequential(
                 nn.Linear(2048, 1600),
-                nn.RReLU(inplace=True),
-                nn.Linear(1600, num_classes)).to(device)
+                nn.LeakyReLU(negative_slope=0.1, inplace=True),
+                nn.Dropout(p=0.2),
+                nn.Linear(1600, 512),
+                nn.LeakyReLU(negative_slope=0.1, inplace=True),    
+                nn.Dropout(p=0.2),
+                nn.Linear(512, num_classes)).to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimisers = [
@@ -145,7 +151,7 @@ def init_model(num_classes, pretrained=True): #, use_cpu=False, pretrained=False
 
     model.to(device)
 
-    # logging.info(model)
+    logging.info(model)
 
     return model, criterion, optimisers
 
@@ -166,11 +172,11 @@ def load_model(model:nn.Module, optimisers, load_from:str):
     epoch = checkpoint["epoch"]
     logging.info("Loading done")
     
-    return epoch
+    return model, epoch
 
 
 ## Train model
-def train_model(model, dataloaders, datasets, optimisers, criterion, epoch):
+def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch):
     def zero_grads(optimisers):
         for o in optimisers: o.zero_grad()
         
@@ -189,7 +195,7 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, epoch):
     # print(f'[INFO] New file created: {file_name}')
     # with open(os.path.join(training_results_dir, file_name), 'w') as f:
     logging.info("Starting training")
-    for epoch in range(C.EPOCHS):
+    for epoch in range(start_epoch, C.EPOCHS):
         print('Epoch {}/{}'.format(epoch+1, C.EPOCHS))
         # f.write('Epoch {}/{}\n'.format(epoch+1, C.EPOCHS))
         # print('-' * 10)
@@ -235,15 +241,6 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, epoch):
 
 
 def main(): 
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("-pretrained", action="store_true")
-    # parser.add_argument("-use_cpu", action="store_true")
-
-    # args = parser.parse_args()
-
-    # pretrained = args.pretrained
-    # use_cpu = args.use_cpu
-
     logging.info("Loading dataset")
     logging.info("Loading data loaders")
     dataloaders, datasets, num_classes = init_dataset()
@@ -251,15 +248,15 @@ def main():
     logging.info("Done")
     epoch=0
     logging.info("Loading ResNet50")
-    model, criterion, optimisers = init_model(num_classes, pretrained=True)#, use_cpu, pretrained)
+    model, criterion, optimisers = init_model(num_classes, pretrained=False)#, use_cpu, pretrained)
     if C.LOAD_CHECKPOINT_PATH != "":
-        epoch = load_model(model, optimisers, C.LOAD_CHECKPOINT_PATH)  
+        model, epoch = load_model(model, optimisers, C.LOAD_CHECKPOINT_PATH)  
     logging.info("Done")
     
     logging.info("Start training")
     model = train_model(model, dataloaders, datasets, optimisers, criterion, epoch)
     logging.info("Finished, saving...")
-    save_model(model, optimisers, C.EPOCHS, C.CHECKPOINT_PATH + datetime.datetime.today().strftime('%Y-%m-%d') + "/FINISHED-")
+    save_model(model, optimisers, C.EPOCHS, C.CHECKPOINT_PATH + datetime.today().strftime('%Y-%m-%d') + "/FINISHED-")
     logging.info("Exiting")
 
 if __name__=="__main__":
