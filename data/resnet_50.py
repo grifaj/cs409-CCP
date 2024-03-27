@@ -109,7 +109,7 @@ def init_dataset():
     return dataloaders, datasets, num_classes
 
 
-def init_model(num_classes, pretrained=True): #, use_cpu=False, pretrained=False):
+def init_model(num_classes, pretrained=True, log=True): #, use_cpu=False, pretrained=False):
     '''
     Initialize device for cuda and load resnet50 model.
     '''
@@ -126,13 +126,7 @@ def init_model(num_classes, pretrained=True): #, use_cpu=False, pretrained=False
         for param in model.parameters():
             param.requires_grad = False 
 
-    logging.info(f"Using device: {device.type}")
-    logging.info(f"Pretrained: {pretrained}")
 
-    # Initialize model
-    # model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False).to(device)
-
-    # numFcInputs = model.fc[0].in_features
 
 
     model.fc = nn.Sequential(
@@ -151,7 +145,10 @@ def init_model(num_classes, pretrained=True): #, use_cpu=False, pretrained=False
 
     model.to(device)
 
-    logging.info(model)
+    if log:
+        logging.info(f"Using device: {device.type}")
+        logging.info(f"Pretrained: {pretrained}")
+        logging.info(model)
 
     return model, criterion, optimisers
 
@@ -248,7 +245,7 @@ def main():
     logging.info("Done")
     epoch=0
     logging.info("Loading ResNet50")
-    model, criterion, optimisers = init_model(num_classes, pretrained=False)#, use_cpu, pretrained)
+    model, criterion, optimisers = init_model(num_classes, pretrained=False, log=True)#, use_cpu, pretrained)
     if C.LOAD_CHECKPOINT_PATH != "":
         model, epoch = load_model(model, optimisers, C.LOAD_CHECKPOINT_PATH)  
     logging.info("Done")
