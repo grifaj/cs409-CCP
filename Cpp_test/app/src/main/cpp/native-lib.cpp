@@ -29,7 +29,7 @@ Java_com_android_example_cpp_1test_CameraActivity_callBoundingBoxes(JNIEnv *env,
     cv::Mat* matImage=(cv::Mat*)image;
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     std::string pred_class = Detection(*matImage, mgr);
-    //*matImage =  captureImage(*matImage);
+    //*matImage = captureImage(*matImage);
 }
 /**
  * @brief Entry point of C++ code and MainActivity.java will call this function.

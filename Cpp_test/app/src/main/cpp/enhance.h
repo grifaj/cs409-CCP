@@ -7,9 +7,6 @@
 
 #include "opencv2/imgproc.hpp"
 
-class enhance {
-    cv::Mat showImage2(cv::Mat img);
-};
-
+cv::Mat captureImage(cv::Mat img);
 
 #endif //CPP_TEST_ENHANCE_H
