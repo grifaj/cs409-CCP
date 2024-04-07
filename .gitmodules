@@ -1,0 +1,3 @@
+[submodule "ncnn-android-vulkan-2023"]
+	path = Cpp_test/app/jni/ncnn-android-vulkan-2023
+	url = https://github.com/kanxoramesh/ncnn-20230517-android-vulkan.git
