@@ -1,7 +1,6 @@
 package com.android.example.cpp_test;
 
 import android.annotation.SuppressLint;
-import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraCharacteristics;
@@ -29,15 +28,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import android.content.res.AssetManager;
-import android.content.res.Resources;
 import java.util.concurrent.ExecutionException;
-
-import org.tensorflow.lite.Interpreter;
 
 public class CameraActivity extends AppCompatActivity {
     static {
@@ -99,10 +90,6 @@ public class CameraActivity extends AppCompatActivity {
             showImagePreview();
         });
 
-
-        /*
-        * TODO on touch focus of camera
-        * */
 //        previewView.setOnTouchListener((v, event) -> {
 //            if(event.getAction() == MotionEvent.ACTION_UP){
 //                //final Rect sensorArraySize = cameraProviderFuture.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
@@ -151,11 +138,10 @@ public class CameraActivity extends AppCompatActivity {
         cvMat = new Mat();
         // convert to opencv Matrix format
         Utils.bitmapToMat(bitmapPhoto, cvMat);
-        callBoundingBoxes(cvMat.getNativeObjAddr(), getAssets());
-
+        callBoundingBoxes(cvMat.getNativeObjAddr());
         //convert back
         Utils.matToBitmap(cvMat,bitmapPhoto);
     }
 
-    public native void callBoundingBoxes(long image, AssetManager assetManager);
+    public native void callBoundingBoxes(long image);
 }

@@ -99,23 +99,21 @@ cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, in
     mergeBounding(outboxes, img, finalBoxes, cv::Size(0, 0));
 
 
-    // instead of returning colImg, return all bounding boxes as array of pairs of top left and bottom right points
-    int returnBoxes[finalBoxes.size()][4];
-
     cvtColor(img, img, cv::COLOR_GRAY2BGR);
+
+    //std::string path = ".\\smiley.jpg";
+    //cv::Mat smiley = cv::imread(path);
+
     for (size_t i = 0; i < finalBoxes.size(); i++)
     {
         rectangle(colImg, finalBoxes[i].tl(), finalBoxes[i].br(), cv::Scalar(0, 0, 255), 2);
 
-        // convert points to array
-        returnBoxes[i][0] = finalBoxes[i].tl().x;
-        returnBoxes[i][1] = finalBoxes[i].tl().y;
-        returnBoxes[i][2] = finalBoxes[i].br().x;
-        returnBoxes[i][3] = finalBoxes[i].br().y;
-
-       // failed test for putting images on boxes
-       // cv::Mat insetImage(colImg, finalBoxes[i]);
-       // smiley.copyTo(insetImage);
+        /*cv::Point bottomLeft = finalBoxes[i].tl() + cv::Point(0, finalBoxes[i].height);*/
+//        cv::resize(smiley, smiley, cv::Size(finalBoxes[i].width, finalBoxes[i].height), 0, 0, cv::INTER_CUBIC);
+//
+//
+//        cv::Mat insetImage(colImg, finalBoxes[i]);
+//        smiley.copyTo(insetImage);
 
         //cv::putText(colImg,
         //    "A",
@@ -125,8 +123,10 @@ cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, in
         //    cv::Scalar(0, 0, 0), // BGR Color
         //    1);
 
+
+
     }
-    //return returnBoxes;
+
     return colImg;
 }
 
