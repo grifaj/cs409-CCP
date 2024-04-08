@@ -7,6 +7,6 @@
 
 #include "opencv2/imgproc.hpp"
 
-cv::Mat captureImage(cv::Mat img);
+cv::Mat captureImage(AAssetManager* mgr, cv::Mat img);
 
 #endif //CPP_TEST_ENHANCE_H

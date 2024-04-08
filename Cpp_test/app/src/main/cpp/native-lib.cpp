@@ -2,11 +2,12 @@
 #include <string>
 #include "opencv2/opencv.hpp"
 #include <opencv2/highgui/highgui.hpp>
+#include <android/asset_manager.h>
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc.hpp"
 #include "enhance.h"
-
-cv::Mat captureImage(cv::Mat mat);
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
 
 extern "C"
 JNIEXPORT jstring JNICALL
@@ -24,7 +25,8 @@ Java_com_android_example_cpp_1test_MainActivity_validate(JNIEnv *env, jobject th
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_android_example_cpp_1test_CameraActivity_callBoundingBoxes(JNIEnv *env, jobject thiz, jlong image) {
+Java_com_android_example_cpp_1test_CameraActivity_callBoundingBoxes(JNIEnv *env, jobject thiz, jlong image, jobject assetManager) {
     cv::Mat* matImage=(cv::Mat*)image;
-    *matImage =  captureImage(*matImage);
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    *matImage =  captureImage(mgr,*matImage);
 }

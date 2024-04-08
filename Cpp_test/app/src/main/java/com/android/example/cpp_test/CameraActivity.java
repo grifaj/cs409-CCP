@@ -1,6 +1,7 @@
 package com.android.example.cpp_test;
 
 import android.annotation.SuppressLint;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraCharacteristics;
@@ -22,6 +23,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
+import android.content.res.AssetManager;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -138,10 +140,10 @@ public class CameraActivity extends AppCompatActivity {
         cvMat = new Mat();
         // convert to opencv Matrix format
         Utils.bitmapToMat(bitmapPhoto, cvMat);
-        callBoundingBoxes(cvMat.getNativeObjAddr());
+        callBoundingBoxes(cvMat.getNativeObjAddr(), getAssets());
         //convert back
         Utils.matToBitmap(cvMat,bitmapPhoto);
     }
 
-    public native void callBoundingBoxes(long image);
+    public native void callBoundingBoxes(long image, AssetManager assetManager);
 }

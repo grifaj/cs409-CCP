@@ -31,6 +31,8 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         # List C/C++ source files with relative paths to this CMakeLists.txt.
         enhance.cpp
         enhance.h
+        ncnn.cpp
+        ncnn.h
         native-lib.cpp)
 
 # Specifies libraries CMake should link to your target library. You
@@ -40,4 +42,8 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         # List libraries link to the target library
         android
         lib_opencv
+        ncnn
         log)
+
+set(ncnn_DIR ${CMAKE_SOURCE_DIR}/ncnn-20240102-android-vulkan/${ANDROID_ABI}/lib/cmake/ncnn)
+find_package(ncnn REQUIRED)

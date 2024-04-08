@@ -1,5 +1,6 @@
 #include "opencv2/opencv.hpp"
 #include <opencv2/highgui/highgui.hpp>
+#include <android/asset_manager.h>
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc.hpp"
 #include "iostream"
@@ -54,7 +55,7 @@ void mergeBounding(std::vector<cv::Rect>& inBoxes, cv::Mat& img, std::vector<cv:
 }
 
 
-cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, int xthresh = 10, int ythresh = 10)
+cv::Mat mserDetection(AAssetManager* mgr, cv::Mat img, cv::Mat colImg, bool thresholding = false, int xthresh = 10, int ythresh = 10)
 {
     std::vector<std::vector<cv::Point>> regions;
     std::vector<cv::Rect> boxes;
@@ -108,22 +109,20 @@ cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, in
     {
         rectangle(colImg, finalBoxes[i].tl(), finalBoxes[i].br(), cv::Scalar(0, 0, 255), 2);
 
-        /*cv::Point bottomLeft = finalBoxes[i].tl() + cv::Point(0, finalBoxes[i].height);*/
-//        cv::resize(smiley, smiley, cv::Size(finalBoxes[i].width, finalBoxes[i].height), 0, 0, cv::INTER_CUBIC);
-//
-//
-//        cv::Mat insetImage(colImg, finalBoxes[i]);
-//        smiley.copyTo(insetImage);
+        AAsset* asset = AAssetManager_open(mgr, "glaggle.png", 0);
+        long size = AAsset_getLength(asset);
+        uchar* buffer = (uchar*) malloc (sizeof(uchar)*size);
+        AAsset_read (asset,buffer,size);
+        AAsset_close(asset);
 
-        //cv::putText(colImg,
-        //    "A",
-        //    bottomLeft, // Coordinates (Bottom-left corner of the text string in the image)
-        //    cv::FONT_HERSHEY_COMPLEX_SMALL, // Font
-        //    5.0, // Scale. 2.0 = 2x bigger
-        //    cv::Scalar(0, 0, 0), // BGR Color
-        //    1);
+        cv::Mat rawData( 1, size, CV_8UC1, (void*)buffer);
+        cv::Mat decodedImage  =  imdecode(rawData, cv::IMREAD_COLOR);
+        cvtColor(decodedImage,decodedImage, cv::COLOR_BGR2RGB);
 
-
+        cv::Rect roiRect(finalBoxes[i]);
+        cv::Mat roi = colImg(roiRect);
+        resize(decodedImage, decodedImage, roi.size());
+        addWeighted(decodedImage, 1, roi, 0, 0, roi);
 
     }
 
@@ -159,7 +158,7 @@ cv::Mat gammaCorrect(cv::Mat img, double gam) {
 
 }
 
-cv::Mat captureImage(cv::Mat img) {
+cv::Mat captureImage(AAssetManager* mgr, cv::Mat img) {
 
     cv::Mat grayImg;
     cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
@@ -176,7 +175,7 @@ cv::Mat captureImage(cv::Mat img) {
     cv::medianBlur(grayErode, graySmoothed, 5);
 
     cv::Mat mserDetect;
-    mserDetect = mserDetection(graySmoothed, img, false);
+    mserDetect = mserDetection(mgr, graySmoothed, img, false);
 
     return mserDetect;
 }
