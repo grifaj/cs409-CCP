@@ -43,6 +43,8 @@ public:
     // clear and destroy
     virtual ~Net();
 
+    Net& operator=(const Net&);
+
 public:
     // option can be changed before loading
     Option opt;
@@ -156,9 +158,8 @@ protected:
 
 private:
     Net(const Net&);
-    Net& operator=(const Net&);
 
-private:
+    private:
     NetPrivate* const d;
 };
 

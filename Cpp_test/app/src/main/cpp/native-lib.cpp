@@ -25,6 +25,11 @@ Java_com_android_example_cpp_1test_MainActivity_validate(JNIEnv *env, jobject th
 }
 extern "C"
 JNIEXPORT void JNICALL
+Java_com_android_example_cpp_1test_MainActivity_preloadModel(JNIEnv *env, jobject thiz) {
+    loadTranslationModel();
+}
+extern "C"
+JNIEXPORT void JNICALL
 Java_com_android_example_cpp_1test_CameraActivity_callBoundingBoxes(JNIEnv *env, jobject thiz, jlong image, jobject assetManager) {
     cv::Mat* matImage=(cv::Mat*)image;
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);

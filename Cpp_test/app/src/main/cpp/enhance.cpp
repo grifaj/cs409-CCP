@@ -5,6 +5,83 @@
 #include "opencv2/imgproc.hpp"
 #include "iostream"
 #include "enhance.h"
+#include <string>
+
+#include "net.h"
+#include "platform.h"
+#include "ncnn.h"
+
+ncnn::Net translationModel;
+bool modelInitilisedFlag = false;
+AAssetManager* mgr;
+
+void loadTranslationModel() {
+    // Load model
+    int ret = translationModel.load_param(mgr,"seals-resnet50-sim-opt.param");
+    if (ret) {
+         __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
+    }
+    ret = translationModel.load_model(mgr, "seals-resnet50-sim-opt.bin");
+    if (ret) {
+       __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
+    }
+    modelInitilisedFlag = true;
+}
+
+
+void displayOverlay(cv::Mat colImg, cv::Rect location){
+
+    if(!modelInitilisedFlag){
+        loadTranslationModel();
+    }
+
+    // get input from bounding box
+    cv::Rect roiRect(location);
+    cv::Mat roi = colImg(roiRect);
+
+    // Convert image data to ncnn format
+    // opencv image in bgr, model needs rgb
+    ncnn::Mat input = ncnn::Mat::from_pixels(roi.data, ncnn::Mat::PIXEL_BGR2RGB, roi.cols, roi.rows);
+
+    // Inference
+    ncnn::Extractor extractor = translationModel.create_extractor();
+    extractor.input("input.1", input);
+    ncnn::Mat output;
+    extractor.extract("503", output);
+
+    float max = output[0];
+    std::string argMax;
+    for (int j=0; j<output.w; j++) {
+        if (output[j] > max){
+            max = output[j];
+            argMax = std::to_string(j);;
+        }
+    }
+
+    // check for threshold TODO
+
+   // get file name
+    std::string filename = "overlays/";
+    filename.append(argMax);
+    filename.append(".bmp");
+    // load file from assets
+    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), 0);
+    long size = AAsset_getLength(asset);
+    uchar* buffer = (uchar*) malloc (sizeof(uchar)*size);
+    AAsset_read (asset,buffer,size);
+    AAsset_close(asset);
+
+    // convert file to rgb image
+    cv::Mat rawData( 1, size, CV_8UC1, (void*)buffer);
+    cv::Mat decodedImage  =  imdecode(rawData, cv::IMREAD_COLOR);
+    cvtColor(decodedImage,decodedImage, cv::COLOR_BGR2RGB);
+
+    //overlay image on rectangle
+    resize(decodedImage, decodedImage, roi.size());
+    addWeighted(decodedImage, 1, roi, 0, 0, roi);
+}
+
+
 
 void clearSuspiciousBoxes(cv::Mat& img, std::vector<cv::Rect> inBoxes, std::vector<cv::Rect>& outboxes, double suspicionThresh = 0.5, int widthSuspicion = 5, int heightSuspicion = 5, double aspectRatioSuspicion = 8.0)
 {
@@ -55,7 +132,7 @@ void mergeBounding(std::vector<cv::Rect>& inBoxes, cv::Mat& img, std::vector<cv:
 }
 
 
-cv::Mat mserDetection(AAssetManager* mgr, cv::Mat img, cv::Mat colImg, bool thresholding = false, int xthresh = 10, int ythresh = 10)
+cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, int xthresh = 10, int ythresh = 10)
 {
     std::vector<std::vector<cv::Point>> regions;
     std::vector<cv::Rect> boxes;
@@ -99,31 +176,14 @@ cv::Mat mserDetection(AAssetManager* mgr, cv::Mat img, cv::Mat colImg, bool thre
 
     mergeBounding(outboxes, img, finalBoxes, cv::Size(0, 0));
 
-
     cvtColor(img, img, cv::COLOR_GRAY2BGR);
-
-    //std::string path = ".\\smiley.jpg";
-    //cv::Mat smiley = cv::imread(path);
 
     for (size_t i = 0; i < finalBoxes.size(); i++)
     {
         rectangle(colImg, finalBoxes[i].tl(), finalBoxes[i].br(), cv::Scalar(0, 0, 255), 2);
 
-        AAsset* asset = AAssetManager_open(mgr, "glaggle.png", 0);
-        long size = AAsset_getLength(asset);
-        uchar* buffer = (uchar*) malloc (sizeof(uchar)*size);
-        AAsset_read (asset,buffer,size);
-        AAsset_close(asset);
-
-        cv::Mat rawData( 1, size, CV_8UC1, (void*)buffer);
-        cv::Mat decodedImage  =  imdecode(rawData, cv::IMREAD_COLOR);
-        cvtColor(decodedImage,decodedImage, cv::COLOR_BGR2RGB);
-
-        cv::Rect roiRect(finalBoxes[i]);
-        cv::Mat roi = colImg(roiRect);
-        resize(decodedImage, decodedImage, roi.size());
-        addWeighted(decodedImage, 1, roi, 0, 0, roi);
-
+        // add correct overlay to colImg for this bounding box
+        displayOverlay(colImg, finalBoxes[i]);
     }
 
     return colImg;
@@ -158,7 +218,9 @@ cv::Mat gammaCorrect(cv::Mat img, double gam) {
 
 }
 
-cv::Mat captureImage(AAssetManager* mgr, cv::Mat img) {
+cv::Mat captureImage(AAssetManager* manager, cv::Mat img) {
+
+    mgr = manager;
 
     cv::Mat grayImg;
     cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
@@ -175,7 +237,7 @@ cv::Mat captureImage(AAssetManager* mgr, cv::Mat img) {
     cv::medianBlur(grayErode, graySmoothed, 5);
 
     cv::Mat mserDetect;
-    mserDetect = mserDetection(mgr, graySmoothed, img, false);
+    mserDetect = mserDetection(graySmoothed, img, false);
 
     return mserDetect;
 }

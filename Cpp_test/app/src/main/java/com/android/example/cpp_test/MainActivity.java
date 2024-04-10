@@ -61,5 +61,6 @@ public class MainActivity extends AppCompatActivity {
 
     public native String stringFromJNI();
     public native String validate(long madAddrGr,long matAddrRgba);
+    public native void preloadModel();// makes it crash for some reason
 
 }
