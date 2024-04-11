@@ -15,6 +15,35 @@ ncnn::Net translationModel;
 bool modelInitilisedFlag = false;
 AAssetManager* mgr;
 
+cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
+{
+    cv::Mat grayImg;
+    cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
+
+
+    cv::Mat boxImg(grayImg, inBox);
+    cv::Mat threshBox;
+
+    cv::threshold(boxImg, threshBox, 0, 255, cv::THRESH_OTSU);
+
+    int rows = threshBox.rows;
+    int cols = threshBox.cols;
+
+    int box_tl = (int) threshBox.at<uchar>(0, 0);
+    int box_bl = (int) threshBox.at<uchar>(rows - 1, 0);
+    int box_tr = (int) threshBox.at<uchar>(0, cols-1);
+    int box_br = (int) threshBox.at<uchar>(rows - 1, cols - 1);
+
+    int sum_corners = box_tl + box_bl + box_tr + box_br;
+
+    if (sum_corners <= 255)
+    {
+        cv::bitwise_not(threshBox, threshBox);
+    }
+
+    return threshBox;
+}
+
 void loadTranslationModel() {
     // Load model
     int ret = translationModel.load_param(mgr,"seals-resnet50-sim-opt.param");
@@ -38,6 +67,8 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
     // get input from bounding box
     cv::Rect roiRect(location);
     cv::Mat roi = colImg(roiRect);
+    // binarise image
+    cv::Mat binRoi = binariseBox(colImg, roiRect);
 
     // Convert image data to ncnn format
     // opencv image in bgr, model needs rgb
@@ -78,7 +109,8 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
 
     //overlay image on rectangle
     resize(decodedImage, decodedImage, roi.size());
-    addWeighted(decodedImage, 1, roi, 0, 0, roi);
+    //addWeighted(decodedImage, 1, roi, 0, 0, roi);
+    addWeighted(decodedImage, 1, binRoi, 0, 0, binRoi);
 }
 
 
