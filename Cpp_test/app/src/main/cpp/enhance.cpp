@@ -68,7 +68,7 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
     cv::Rect roiRect(location);
     cv::Mat roi = colImg(roiRect);
     // binarise image
-    cv::Mat binRoi = binariseBox(colImg, roiRect);
+    //cv::Mat binRoi = binariseBox(colImg, roiRect);
 
     // Convert image data to ncnn format
     // opencv image in bgr, model needs rgb
@@ -109,8 +109,8 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
 
     //overlay image on rectangle
     resize(decodedImage, decodedImage, roi.size());
-    //addWeighted(decodedImage, 1, roi, 0, 0, roi);
-    addWeighted(decodedImage, 1, binRoi, 0, 0, binRoi);
+    addWeighted(decodedImage, 1, roi, 0, 0, roi);
+    //addWeighted(decodedImage, 1, binRoi, 0, 0, binRoi);
 }
 
 
