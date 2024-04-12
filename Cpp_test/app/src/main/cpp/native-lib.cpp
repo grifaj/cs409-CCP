@@ -9,6 +9,8 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 
+#include "net.h"
+
 extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_android_example_cpp_1test_MainActivity_stringFromJNI(JNIEnv *env, jobject thiz) {
@@ -26,6 +28,7 @@ Java_com_android_example_cpp_1test_MainActivity_validate(JNIEnv *env, jobject th
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_android_example_cpp_1test_MainActivity_preloadModel(JNIEnv *env, jobject thiz) {
+    __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "reached c++ part");
     loadTranslationModel();
 }
 extern "C"

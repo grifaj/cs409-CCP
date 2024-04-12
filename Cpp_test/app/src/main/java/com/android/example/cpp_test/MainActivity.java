@@ -32,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
         Log.d("Loaded",stringFromJNI());
         Log.d("Loaded",validate(500,500));
 
+        //preloadModel();
+
         if (hasCameraPermission()) {
             enableCamera();
         } else {

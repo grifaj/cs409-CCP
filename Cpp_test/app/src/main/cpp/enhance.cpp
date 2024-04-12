@@ -55,6 +55,7 @@ cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
 
 void loadTranslationModel() {
     // Load model
+
     int ret = translationModel.load_param(mgr,"seals-resnet50-sim-opt.param");
     if (ret) {
          __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");

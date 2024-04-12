@@ -44,6 +44,7 @@ public class CameraActivity extends AppCompatActivity {
     private CameraSelector lensFacing = CameraSelector.DEFAULT_BACK_CAMERA;
     Mat cvMat;
     Bitmap bitmapPhoto;
+    ProcessCameraProvider processCameraProvider;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -73,12 +74,16 @@ public class CameraActivity extends AppCompatActivity {
             photoPreview.setImageBitmap(bitmapPhoto);
             photoPreview.setVisibility(View.VISIBLE);
 
+            // stop camera view
+            processCameraProvider.unbindAll();
+
             // also make preview exit button visible
             closePhotoPreview.setVisibility(View.VISIBLE);
         });
 
         // return to camera preview
         closePhotoPreview.setOnClickListener(v -> {
+            showImagePreview();
             // set components back to invisible
             photoPreview.setVisibility(View.GONE);
             closePhotoPreview.setVisibility(View.GONE);
@@ -123,13 +128,13 @@ public class CameraActivity extends AppCompatActivity {
                     .build();
 
             try {
-                ProcessCameraProvider processCameraProvider = cameraProviderFuture.get();
+                processCameraProvider = cameraProviderFuture.get();
                 Preview preview = new Preview.Builder().build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
                 processCameraProvider.unbindAll();
 
                 // lensFacing is used here
-                Camera camera = processCameraProvider.bindToLifecycle((LifecycleOwner)this, lensFacing, imageCapture, preview);
+                Camera camera = processCameraProvider.bindToLifecycle(this, lensFacing, imageCapture, preview);
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }
