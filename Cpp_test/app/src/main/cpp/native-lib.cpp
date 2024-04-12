@@ -27,9 +27,9 @@ Java_com_android_example_cpp_1test_MainActivity_validate(JNIEnv *env, jobject th
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_android_example_cpp_1test_MainActivity_preloadModel(JNIEnv *env, jobject thiz) {
-    __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "reached c++ part");
-    loadTranslationModel();
+Java_com_android_example_cpp_1test_MainActivity_preloadModels(JNIEnv *env, jobject thiz, jobject assetManager) {
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    preloadModels(mgr);
 }
 extern "C"
 JNIEXPORT void JNICALL

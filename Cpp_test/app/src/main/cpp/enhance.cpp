@@ -55,7 +55,6 @@ cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
 
 void loadTranslationModel() {
     // Load model
-
     int ret = translationModel.load_param(mgr,"seals-resnet50-sim-opt.param");
     if (ret) {
          __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
@@ -65,6 +64,31 @@ void loadTranslationModel() {
        __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
     }
     modelInitialisedFlag = true;
+}
+
+void preloadModels(AAssetManager* manager) {
+
+    mgr = manager;
+
+    int ret = translationModel.load_param(mgr,"seals-resnet50-sim-opt.param");
+    if (ret) {
+        __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
+    }
+    ret = translationModel.load_model(mgr, "seals-resnet50-sim-opt.bin");
+    if (ret) {
+        __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
+    }
+    modelInitialisedFlag = true;
+
+    ret = detectionModel.load_param(mgr,"model.ncnn.param");
+    if (ret) {
+        __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
+    }
+    ret = detectionModel.load_model(mgr, "model.ncnn.bin");
+    if (ret) {
+        __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
+    }
+    detmodelInitialisedFlag = true;
 }
 
 

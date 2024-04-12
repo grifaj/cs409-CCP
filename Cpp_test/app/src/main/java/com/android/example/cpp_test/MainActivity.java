@@ -7,6 +7,7 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -32,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d("Loaded",stringFromJNI());
         Log.d("Loaded",validate(500,500));
 
-        //preloadModel();
+        preloadModels(getAssets());
 
         if (hasCameraPermission()) {
             enableCamera();
@@ -63,6 +64,6 @@ public class MainActivity extends AppCompatActivity {
 
     public native String stringFromJNI();
     public native String validate(long madAddrGr,long matAddrRgba);
-    public native void preloadModel();// makes it crash for some reason
+    public native void preloadModels(AssetManager assetManager);// makes it crash for some reason
 
 }
