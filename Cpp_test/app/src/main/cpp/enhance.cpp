@@ -584,7 +584,10 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg) {
     cv::Mat detectionImg;
     detectionImg = Detection(img, img);
 
-    return detectionImg;
+    cv::Mat detectionFinal;
+    cvtColor(detectionImg, detectionFinal, cv::COLOR_BGR2RGBA);
+
+    return detectionFinal;
 }
 
 //int main(int, char**) {
