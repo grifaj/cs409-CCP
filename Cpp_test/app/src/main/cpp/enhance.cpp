@@ -1,3 +1,5 @@
+#include <vector>
+#include <algorithm>
 #include "opencv2/opencv.hpp"
 #include <opencv2/highgui/highgui.hpp>
 #include <android/asset_manager.h>
@@ -12,7 +14,9 @@
 #include "ncnn.h"
 
 ncnn::Net translationModel;
+ncnn::Net detectionModel;
 bool modelInitilisedFlag = false;
+bool detmodelInitialisedFlag = false;
 AAssetManager* mgr;
 
 cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
@@ -76,6 +80,7 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
 
     // Inference
     ncnn::Extractor extractor = translationModel.create_extractor();
+    //extractor.set_light_mode(true);
     extractor.input("input.1", input);
     ncnn::Mat output;
     extractor.extract("503", output);
@@ -212,7 +217,7 @@ cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, in
 
     for (size_t i = 0; i < finalBoxes.size(); i++)
     {
-        rectangle(colImg, finalBoxes[i].tl(), finalBoxes[i].br(), cv::Scalar(0, 0, 255), 2);
+        //rectangle(colImg, finalBoxes[i].tl(), finalBoxes[i].br(), cv::Scalar(0, 0, 255), 2);
 
         // add correct overlay to colImg for this bounding box
         displayOverlay(colImg, finalBoxes[i]);
@@ -250,6 +255,251 @@ cv::Mat gammaCorrect(cv::Mat img, double gam) {
 
 }
 
+void sortParallelVector(std::vector<cv::Rect>* vec, std::vector<float>* score_vec)
+{
+
+    std::vector<cv::Rect>& vec_ref = *vec;
+    std::vector<float>& score_ref = *score_vec;
+
+    std::vector<std::size_t> index_vec;
+    std::vector<cv::Rect> vec_ordered;
+    std::vector<float> score_vec_ordered;
+
+    for (std::size_t i = 0; i != vec->size(); ++i)
+    {
+        index_vec.push_back(i);
+    }
+
+    std::sort(
+            index_vec.begin(), index_vec.end(),
+            [&](std::size_t a, std::size_t b) {return score_ref[a] > score_ref[b];});
+
+    for (std::size_t i = 0; i != index_vec.size(); ++i)
+    {
+        vec_ordered.push_back(vec_ref[index_vec[i]]);
+        score_vec_ordered.push_back(score_ref[index_vec[i]]);
+    }
+
+    *vec = vec_ordered;
+    *score_vec = score_vec_ordered;
+
+}
+
+float calculate_IOU(cv::Rect a, cv::Rect b)
+{
+    float areaA = a.area();
+
+    float areaA_br_x = a.br().x;
+    float areaA_br_y = a.br().y;
+
+    if (areaA <= 0.0)
+    {
+        return 0.0;
+    }
+
+    float areaB = b.area();
+
+    if (areaB <= 0.0)
+    {
+        return 0.0;
+    }
+    float areaB_br_x = b.br().x;
+    float areaB_br_y = b.br().y;
+
+    float intersection_left_x = std::max(a.tl().x, b.tl().x);
+    float intersection_left_y = std::max(a.tl().y, b.tl().y);
+    float intersection_bottom_x = std::min(areaA_br_x, areaB_br_x);
+    float intersection_bottom_y = std::min(areaA_br_y, areaB_br_y);
+
+    float intersection_width = std::max(intersection_bottom_x - intersection_left_x, (float)0.0);
+    float intersection_height = std::max(intersection_bottom_y - intersection_left_y, (float)0.0);
+
+    float intersection_area = intersection_width * intersection_height;
+
+    return (float) intersection_area / (float) (areaA + areaB - intersection_area);
+
+}
+
+void nms(std::vector<cv::Rect>* boxes, std::vector<float>* scores, std::vector<cv::Rect>* selected, float thresh)
+{
+
+    sortParallelVector(boxes, scores);
+
+    std::vector<cv::Rect>& boxes_ref = *boxes;
+    std::vector<float>& score_ref = *scores;
+
+    std::vector<bool> active;
+
+    for (std::size_t i = 0; i != boxes->size(); i++)
+    {
+        active.push_back(true);
+    }
+
+    int num_active = active.size();
+
+    bool done = false;
+
+    for (std::size_t i = 0; i != boxes->size(); i++)
+    {
+        if (active[i])
+        {
+            cv::Rect box_a = boxes_ref[i];
+            selected->push_back(box_a);
+
+            for (std::size_t j = i+1; j != boxes->size(); j++)
+            {
+                if (active[j])
+                {
+                    cv::Rect box_b = boxes_ref[j];
+
+                    float iou = calculate_IOU(box_a, box_b);
+
+                    if (iou > thresh)
+                    {
+                        active[j] = false;
+                        num_active--;
+
+                        if (num_active <= 0)
+                        {
+                            done = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (done)
+            {
+                break;
+            }
+        }
+    }
+}
+
+void loadDetectionModel()
+{
+    int ret = detectionModel.load_param(mgr,"model.ncnn.param");
+    if (ret) {
+        __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
+    }
+    ret = detectionModel.load_model(mgr, "model.ncnn.bin");
+    if (ret) {
+        __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
+    }
+    detmodelInitialisedFlag = true;
+}
+
+cv::Mat Detection(cv::Mat src, cv::Mat orig) {
+
+    cv::Mat srcScaled;
+    float sf;
+    bool r_or_c = false;
+
+    if(src.rows >= src.cols)
+    {
+        sf = 512.0/(float)src.rows;
+        r_or_c = false;
+    }
+    else
+    {
+        sf = 512.0/(float)src.cols;
+        r_or_c = true;
+    }
+
+    cv::resize(src, srcScaled, cv::Size(), sf, sf);
+
+    cv::Mat srcFinal;
+
+    if (r_or_c)
+    {
+        cv::copyMakeBorder(srcScaled, srcFinal, 0, 512-srcScaled.rows, 0, 0, cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
+    }
+    else
+    {
+        cv::copyMakeBorder(srcScaled, srcFinal, 0, 0, 0, 512-srcScaled.cols, cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
+    }
+
+//    // Load model
+//    ncnn::Net net;
+//    int ret = net.load_param("model.ncnn.param");
+//    if (ret) {
+//        // __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
+//        std::cout << "Failed to load the model parameters" << std::endl;
+//    }
+//    ret = net.load_model("model.ncnn.bin");
+//    if (ret) {
+//        //__android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
+//        std::cout << "Failed to load the model weights" << std::endl;
+//    }
+
+    // Convert image data to ncnn format
+    // opencv image in bgr, model needs rgb
+    if(!detmodelInitialisedFlag){
+        loadDetectionModel();
+    }
+
+    ncnn::Mat input = ncnn::Mat::from_pixels(srcFinal.data,
+                                             ncnn::Mat::PixelType::PIXEL_BGR,
+                                             srcFinal.cols, srcFinal.rows);
+
+
+    float means[] = {0.0, 0.0, 0.0};
+    float norms[] = {1.0/255.0, 1.0/255.0, 1.0/255.0};
+
+    input.substract_mean_normalize(means, norms);
+
+    // Inference
+    ncnn::Extractor extractor = detectionModel.create_extractor();
+    extractor.input("in0", input);
+    ncnn::Mat output;
+    extractor.extract("out0", output);
+
+    ncnn::Mat out_flatterned = output.reshape(output.w * output.h * output.c);
+    std::vector<cv::Rect>* boxes = new std::vector<cv::Rect>();
+    std::vector<float>* confidences = new std::vector<float>();
+
+    int sec_size = out_flatterned.w/5;
+    for (int j=0; j<sec_size; j++)
+    {
+        if (out_flatterned[j+(sec_size*4)] > 0.5)
+        {
+            confidences->push_back(float(out_flatterned[j+(sec_size*4)]));
+
+            float x = out_flatterned[j] / sf;
+            float y = out_flatterned[j+(sec_size)] / sf;
+            float w = out_flatterned[j+(sec_size*2)] / sf;
+            float h = out_flatterned[j+(sec_size*3)] / sf;
+
+            int left = int((x - 0.5 * w));
+            int top = int((y - 0.5 * h));
+
+            int width = int(w);
+            int height = int(h);
+            boxes->push_back(cv::Rect(left, top, width, height));
+        }
+        else
+        {
+            std::string bugString = "Confidence: " + std::to_string(out_flatterned[j+(sec_size*4)]);
+            __android_log_print(ANDROID_LOG_DEBUG, "det_boxes", "%s", bugString.c_str());
+        }
+    }
+
+    std::string detString = "Detected " + std::to_string(boxes->size()) + " boxes";
+    __android_log_print(ANDROID_LOG_DEBUG, "det_boxes", "%s", detString.c_str());
+
+    std::vector<cv::Rect>* selected_boxes = new std::vector<cv::Rect>();
+    nms(boxes, confidences, selected_boxes, 0.5);
+
+    for (std::size_t i = 0; i != selected_boxes->size(); i++)
+    {
+        //cv::rectangle(src, (*selected_boxes)[i], cv::Scalar(255, 0, 0), 1);
+        displayOverlay(orig, (*selected_boxes)[i]);
+    }
+
+    return orig;
+
+}
+
 cv::Mat captureImage(AAssetManager* manager, cv::Mat img) {
 
     mgr = manager;
@@ -257,7 +507,7 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat img) {
     cv::Mat grayImg;
     cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
 
-    img = gammaCorrect(img, 0.95);
+    //img = gammaCorrect(img, 0.95);
 
     cv::Mat grayDilate;
     cv::Mat grayErode;
@@ -265,13 +515,29 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat img) {
     cv::dilate(grayImg, grayDilate, kernel, cv::Point(-1, -1), 1);
     cv::erode(grayDilate, grayErode, kernel, cv::Point(-1, -1), 1);
 
+
     cv::Mat graySmoothed;
     cv::medianBlur(grayErode, graySmoothed, 5);
 
-    cv::Mat mserDetect;
-    mserDetect = mserDetection(graySmoothed, img, false);
+    grayDilate.release();
+    grayErode.release();
+    grayImg.release();
 
-    return mserDetect;
+//    cv::Mat mserDetect;
+//    mserDetect = mserDetection(graySmoothed, img, false);
+//
+//    return mserDetect;
+
+    cv::Mat grayBGR;
+    cvtColor(graySmoothed, grayBGR, cv::COLOR_GRAY2BGR);
+
+    graySmoothed.release();
+
+    cv::Mat detectionImg;
+    detectionImg = Detection(img, img);
+    return detectionImg;
+
+
 }
 
 //int main(int, char**) {
