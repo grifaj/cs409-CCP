@@ -530,8 +530,6 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
     {
         if (out_flatterned[j+(sec_size*4)] > 0.5)
         {
-            confidences->push_back(float(out_flatterned[j+(sec_size*4)]));
-
             float x = out_flatterned[j] / sf;
             float y = out_flatterned[j+(sec_size)] / sf;
             float w = out_flatterned[j+(sec_size*2)] / sf;
@@ -540,9 +538,15 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
             int left = int((x - 0.5 * w));
             int top = int((y - 0.5 * h));
 
-            int width = int(w);
-            int height = int(h);
-            boxes->push_back(cv::Rect(left, top, width, height));
+            if (left > 0 && top > 0 && w > 0 && h > 0)
+            {
+                int width = int(w);
+                int height = int(h);
+                boxes->push_back(cv::Rect(left, top, width, height));
+                confidences->push_back(float(out_flatterned[j+(sec_size*4)]));
+            }
+
+
         }
         else
         {
