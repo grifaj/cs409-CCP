@@ -15,7 +15,7 @@
 
 ncnn::Net translationModel;
 ncnn::Net detectionModel;
-bool modelInitilisedFlag = false;
+bool modelInitialisedFlag = false;
 bool detmodelInitialisedFlag = false;
 AAssetManager* mgr;
 
@@ -63,13 +63,14 @@ void loadTranslationModel() {
     if (ret) {
        __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
     }
-    modelInitilisedFlag = true;
+    modelInitialisedFlag = true;
 }
 
 
 void displayOverlay(cv::Mat colImg, cv::Rect location){
 
-    if(!modelInitilisedFlag){
+    if(!modelInitialisedFlag)
+    {
         loadTranslationModel();
     }
 
@@ -114,12 +115,19 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
 
     // convert file to rgb image
     cv::Mat rawData( 1, size, CV_8UC1, (void*)buffer);
-    cv::Mat decodedImage  =  imdecode(rawData, cv::IMREAD_COLOR);
-    cvtColor(decodedImage,decodedImage, cv::COLOR_BGR2RGB);
+    cv::Mat decodedImage = imdecode(rawData, cv::IMREAD_COLOR);
+
+    cv::Mat decodeColor;
+    cvtColor(decodedImage,decodeColor, cv::COLOR_BGR2RGB);
+    decodedImage.release();
 
     //overlay image on rectangle
-    resize(decodedImage, decodedImage, roi.size());
-    addWeighted(decodedImage, 1, roi, 0, 0, roi);
+
+    cv::Mat overlayImg;
+    cv::resize(decodeColor, overlayImg, roi.size());
+    decodeColor.release();
+
+    addWeighted(overlayImg, 1, roi, 0, 0, roi);
     //addWeighted(decodedImage, 1, binRoi, 0, 0, binRoi);
 }
 
@@ -553,9 +561,8 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg) {
 
     cv::Mat detectionImg;
     detectionImg = Detection(img, img);
+
     return detectionImg;
-
-
 }
 
 //int main(int, char**) {
