@@ -50,7 +50,7 @@ cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
     cv::Mat threshBGR;
     cvtColor(threshBox, threshBGR, cv::COLOR_GRAY2BGR);
 
-    return threshBox;
+    return threshBGR;
 }
 
 void loadTranslationModel() {
@@ -69,6 +69,8 @@ void loadTranslationModel() {
 
 void displayOverlay(cv::Mat colImg, cv::Rect location){
 
+    std::string bugString;
+
     if(!modelInitialisedFlag)
     {
         loadTranslationModel();
@@ -78,15 +80,34 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
     cv::Rect roiRect(location);
     cv::Mat roi = colImg(roiRect);
     // binarise image
-    //cv::Mat binRoi = binariseBox(colImg, roiRect);
+    cv::Mat binRoi = binariseBox(colImg, roiRect);
+
+    bugString = "Retrieved binary box";
+    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+
+    cv::Mat binRoiR;
+    cv::resize(binRoi, binRoiR, cv::Size(232, 232));
+
+    const int cropSize = 224;
+    const int offsetW = (binRoiR.cols - cropSize) / 2;
+    const int offsetH = (binRoiR.rows - cropSize) / 2;
+    const cv::Rect roiBin(offsetW, offsetH, cropSize, cropSize);
+    binRoi = binRoiR(roiBin).clone();
+
+    binRoiR.release();
 
     // Convert image data to ncnn format
     // opencv image in bgr, model needs rgb
-    ncnn::Mat input = ncnn::Mat::from_pixels(roi.data, ncnn::Mat::PIXEL_BGR2RGB, roi.cols, roi.rows);
+    ncnn::Mat input = ncnn::Mat::from_pixels(binRoi.data, ncnn::Mat::PIXEL_BGR2RGB, binRoi.cols, binRoi.rows);
+
+    float means[] = {0.485, 0.456, 0.406};
+    float norms[] = {0.229, 0.224, 0.225};
+
+    input.substract_mean_normalize(means, norms);
 
     // Inference
     ncnn::Extractor extractor = translationModel.create_extractor();
-    //extractor.set_light_mode(true);
+    extractor.set_light_mode(true);
     extractor.input("input.1", input);
     ncnn::Mat output;
     extractor.extract("503", output);
@@ -128,6 +149,7 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
     decodeColor.release();
 
     addWeighted(overlayImg, 1, roi, 0, 0, roi);
+    overlayImg.release();
     //addWeighted(decodedImage, 1, binRoi, 0, 0, binRoi);
 }
 
