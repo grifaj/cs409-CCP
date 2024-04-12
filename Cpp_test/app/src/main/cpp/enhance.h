@@ -7,7 +7,7 @@
 
 #include "opencv2/imgproc.hpp"
 
-cv::Mat captureImage(AAssetManager* mgr, cv::Mat img);
+cv::Mat captureImage(AAssetManager* mgr, cv::Mat srcImg);
 void loadTranslationModel();
 
 #endif //CPP_TEST_ENHANCE_H

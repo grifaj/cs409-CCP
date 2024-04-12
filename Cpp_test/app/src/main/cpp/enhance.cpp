@@ -396,6 +396,8 @@ void loadDetectionModel()
 
 cv::Mat Detection(cv::Mat src, cv::Mat orig) {
 
+    std::string bugString;
+
     cv::Mat srcScaled;
     float sf;
     bool r_or_c = false;
@@ -443,8 +445,13 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
         loadDetectionModel();
     }
 
+    bugString = "Height: " + std::to_string(srcFinal.rows);
+    __android_log_print(ANDROID_LOG_DEBUG, "resize", "%s", bugString.c_str());
+    bugString = "Width: " + std::to_string(srcFinal.cols);
+    __android_log_print(ANDROID_LOG_DEBUG, "resize", "%s", bugString.c_str());
+
     ncnn::Mat input = ncnn::Mat::from_pixels(srcFinal.data,
-                                             ncnn::Mat::PixelType::PIXEL_BGR,
+                                             ncnn::Mat::PixelType::PIXEL_RGB,
                                              srcFinal.cols, srcFinal.rows);
 
 
@@ -484,16 +491,19 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
         }
         else
         {
-            std::string bugString = "Confidence: " + std::to_string(out_flatterned[j+(sec_size*4)]);
-            __android_log_print(ANDROID_LOG_DEBUG, "det_boxes", "%s", bugString.c_str());
+            bugString = "Confidence: " + std::to_string(out_flatterned[j+(sec_size*4)]);
+            //__android_log_print(ANDROID_LOG_DEBUG, "det_boxes", "%s", bugString.c_str());
         }
     }
 
-    std::string detString = "Detected " + std::to_string(boxes->size()) + " boxes";
-    __android_log_print(ANDROID_LOG_DEBUG, "det_boxes", "%s", detString.c_str());
+    bugString = "Detected " + std::to_string(boxes->size()) + " boxes";
+    __android_log_print(ANDROID_LOG_DEBUG, "det_boxes", "%s", bugString.c_str());
 
     std::vector<cv::Rect>* selected_boxes = new std::vector<cv::Rect>();
     nms(boxes, confidences, selected_boxes, 0.5);
+
+    bugString = "NMS " + std::to_string(selected_boxes->size()) + " boxes";
+    __android_log_print(ANDROID_LOG_DEBUG, "det_boxes", "%s", bugString.c_str());
 
     for (std::size_t i = 0; i != selected_boxes->size(); i++)
     {
@@ -505,9 +515,12 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
 
 }
 
-cv::Mat captureImage(AAssetManager* manager, cv::Mat img) {
+cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg) {
 
     mgr = manager;
+
+    cv::Mat img;
+    cvtColor(srcImg, img, cv::COLOR_RGBA2BGR);
 
     cv::Mat grayImg;
     cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
