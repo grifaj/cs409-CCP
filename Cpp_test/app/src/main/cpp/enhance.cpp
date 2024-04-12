@@ -29,6 +29,8 @@ cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
     cv::Mat threshBox;
 
     cv::threshold(boxImg, threshBox, 0, 255, cv::THRESH_OTSU);
+    boxImg.release();
+    grayImg.release();
 
     int rows = threshBox.rows;
     int cols = threshBox.cols;
@@ -44,6 +46,9 @@ cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
     {
         cv::bitwise_not(threshBox, threshBox);
     }
+
+    cv::Mat threshBGR;
+    cvtColor(threshBox, threshBGR, cv::COLOR_GRAY2BGR);
 
     return threshBox;
 }
