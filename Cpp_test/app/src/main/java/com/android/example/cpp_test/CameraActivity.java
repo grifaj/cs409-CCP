@@ -98,10 +98,12 @@ public class CameraActivity extends AppCompatActivity {
             if (drawingMode)
             {
                 drawingMode = false;
+                drawMode.setBackgroundResource(R.drawable.circle_background);
             }
             else
             {
                 drawingMode = true;
+                drawMode.setBackgroundResource(R.drawable.pressed_background);
             }
         });
 
