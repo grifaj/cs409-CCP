@@ -20,7 +20,7 @@ from character_translation_load import DatasetLoad
 
 
 # Directory where raw scraped images are stored
-DATA_DIR = '/dcs/project/seal-script-project-data/seal-script-images-raw'
+DATA_DIR = '/dcs/project/seal-script-project-data/seal-script-images-raw-copy'
 
 # Directory to save newly distorted images
 SAVE_DIR = '/dcs/project/seal-script-project-data/seal-script-images-clean/'
@@ -28,7 +28,7 @@ IMG_FILETYPE = '.png'
 test = True
 
 # The character index to edit up to
-edit_index = 1076
+edit_index = 1075
 
 # The number of variants to obtain for each character
 DESIRED_VARIANTS = 100
@@ -312,6 +312,6 @@ def main(start_index=1):
         
 if __name__ == "__main__":
     start_index = 0
-    get_data_csv_override(1076)
+    get_data_csv_override(1075)
     main(start_index)
         
