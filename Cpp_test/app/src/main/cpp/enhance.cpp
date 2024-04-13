@@ -642,7 +642,7 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg) {
     graySmoothed.release();
 
     cv::Mat detectionImg;
-    detectionImg = Detection(img, img);
+    detectionImg = Detection(grayBGR, img);
 
     cv::Mat detectionFinal;
     cvtColor(detectionImg, detectionFinal, cv::COLOR_BGR2RGBA);
