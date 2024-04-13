@@ -32,7 +32,8 @@
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintVertical_bias="1.0">
+    </androidx.camera.view.PreviewView>
 
     <View
         android:id="@+id/focusPoint"
@@ -63,6 +64,22 @@
         app:layout_constraintEnd_toStartOf="@id/cameraShutter"
         app:layout_constraintTop_toTopOf="@id/cameraShutter"
         app:srcCompat="@drawable/ic_flip_camera_android"
+        app:tint="@color/button" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/drawMode"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_margin="32dp"
+        android:background="@drawable/circle_background"
+        android:padding="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintVertical_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/paintbrush"
         app:tint="@color/button" />
 
     <androidx.appcompat.widget.AppCompatImageView
