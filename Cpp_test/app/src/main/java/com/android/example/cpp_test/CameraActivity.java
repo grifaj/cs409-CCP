@@ -8,6 +8,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -38,6 +39,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 public class CameraActivity extends AppCompatActivity {
@@ -105,8 +107,12 @@ public class CameraActivity extends AppCompatActivity {
             showImagePreview();
         });
 
+        ScaleListener listener = new ScaleListener();
+        ScaleGestureDetector scaleGestureDetector = new ScaleGestureDetector(previewView.getContext(), listener);
+
         previewView.setOnTouchListener((v, event) -> {
             Log.d("TOUCH", "Screen touched");
+            scaleGestureDetector.onTouchEvent(event);
             if(event.getAction() == MotionEvent.ACTION_DOWN)
             {
                 Log.d("TOUCH", "Pressed");
@@ -129,11 +135,6 @@ public class CameraActivity extends AppCompatActivity {
                     FocusMeteringAction.Builder builder = new FocusMeteringAction.Builder(meteringPoint, FocusMeteringAction.FLAG_AF);
                     builder.disableAutoCancel();
                     camera.getCameraControl().startFocusAndMetering(builder.build());
-//                    camera.getCameraControl().startFocusAndMetering(
-//                            new FocusMeteringAction.Builder(
-//                                    meteringPoint,
-//                                    FocusMeteringAction.FLAG_AF
-//                            ).build());
                 } catch (Exception CameraInfoUnavailableException)
                 {
                     //Log.d("ERROR", "Cannot Access Camera", CameraInfoUnavailableException);
@@ -144,6 +145,17 @@ public class CameraActivity extends AppCompatActivity {
             }
             return false;
         });
+    }
+
+    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener
+    {
+        @Override
+        public boolean onScale(ScaleGestureDetector detector) {
+            float currentZoomRatio = Objects.requireNonNull(camera.getCameraInfo().getZoomState().getValue()).getZoomRatio();
+            float delta = detector.getScaleFactor();
+            camera.getCameraControl().setZoomRatio(currentZoomRatio * delta);
+            return true;
+        }
     }
 
     private void showImagePreview() {
