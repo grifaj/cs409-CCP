@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -13,17 +14,24 @@ import android.widget.ImageView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
+import android.content.Context;
+import androidx.camera.core.CameraInfoUnavailableException;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.DisplayOrientedMeteringPointFactory;
 import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
+import androidx.camera.core.SurfaceOrientedMeteringPointFactory;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 import android.content.res.AssetManager;
+import android.hardware.display.DisplayManager;
+import android.view.Display;
+import android.view.WindowManager;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -97,27 +105,45 @@ public class CameraActivity extends AppCompatActivity {
             showImagePreview();
         });
 
-//        previewView.setOnTouchListener((v, event) -> {
-//            if(event.getAction() == MotionEvent.ACTION_UP){
-//                //final Rect sensorArraySize = cameraProviderFuture.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-//                int x = (int) event.getX();
-//                int y = (int) event.getY();
-//
-//                MeteringPointFactory factory  = new MeteringPointFactory(
-//                        ((float) previewView.getWidth()), ((float) previewView.getHeight())
-//                );
-//                MeteringPoint meteringPoint = factory.createPoint(x,y);
-//                camera.getCameraControl().startFocusAndMetering(
-//                        new FocusMeteringAction.Builder(
-//                                meteringPoint,
-//                                FocusMeteringAction.FLAG_AF
-//                        ).build()
-//                     );
-//                return true;
-//            }
-//            return false;
-//        });
+        previewView.setOnTouchListener((v, event) -> {
+            Log.d("TOUCH", "Screen touched");
+            if(event.getAction() == MotionEvent.ACTION_DOWN)
+            {
+                Log.d("TOUCH", "Pressed");
+                return true;
+            }
+            if(event.getAction() == MotionEvent.ACTION_UP)
+            {
+                Log.d("TOUCH", "Released");
+                //final Rect sensorArraySize = cameraProviderFuture.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                float x = event.getX();
+                float y = event.getY();
+                String output = "x = " + String.valueOf(x) + " y = " + String.valueOf(y);
+                Log.d("TOUCH", output);
 
+                Display display = getDefaultDisplay(this);
+                MeteringPointFactory factory  = new DisplayOrientedMeteringPointFactory(display, camera.getCameraInfo(), ((float) previewView.getWidth()), ((float) previewView.getHeight()));
+                MeteringPoint meteringPoint = factory.createPoint(x,y);
+                try
+                {
+                    FocusMeteringAction.Builder builder = new FocusMeteringAction.Builder(meteringPoint, FocusMeteringAction.FLAG_AF);
+                    builder.disableAutoCancel();
+                    camera.getCameraControl().startFocusAndMetering(builder.build());
+//                    camera.getCameraControl().startFocusAndMetering(
+//                            new FocusMeteringAction.Builder(
+//                                    meteringPoint,
+//                                    FocusMeteringAction.FLAG_AF
+//                            ).build());
+                } catch (Exception CameraInfoUnavailableException)
+                {
+                    //Log.d("ERROR", "Cannot Access Camera", CameraInfoUnavailableException);
+                    Log.d("ERROR", "Cannot Access Camera");
+                }
+
+                return true;
+            }
+            return false;
+        });
     }
 
     private void showImagePreview() {
@@ -134,7 +160,7 @@ public class CameraActivity extends AppCompatActivity {
                 processCameraProvider.unbindAll();
 
                 // lensFacing is used here
-                Camera camera = processCameraProvider.bindToLifecycle(this, lensFacing, imageCapture, preview);
+                camera = processCameraProvider.bindToLifecycle(this, lensFacing, imageCapture, preview);
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }
@@ -148,6 +174,11 @@ public class CameraActivity extends AppCompatActivity {
         callBoundingBoxes(cvMat.getNativeObjAddr(), getAssets());
         //convert back
         Utils.matToBitmap(cvMat,bitmapPhoto);
+    }
+
+    public Display getDefaultDisplay(CameraActivity activity) {
+        WindowManager windowManager = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
+        return windowManager.getDefaultDisplay();
     }
 
     public native void callBoundingBoxes(long image, AssetManager assetManager);
