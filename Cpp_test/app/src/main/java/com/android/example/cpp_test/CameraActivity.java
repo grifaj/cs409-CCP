@@ -46,6 +46,7 @@ public class CameraActivity extends AppCompatActivity {
     static {
         System.loadLibrary("cpp_test");
     }
+    private boolean drawingMode;
     private PreviewView previewView;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private Camera camera;
@@ -61,10 +62,12 @@ public class CameraActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        drawingMode = false;
 
         previewView = findViewById(R.id.previewView);
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         ImageView cameraShutter = findViewById(R.id.cameraShutter);
+        ImageView drawMode = findViewById(R.id.drawMode);
         photoPreview = findViewById(R.id.photoPreview);
         ImageView switchLens = findViewById(R.id.switchLens);
         closePhotoPreview = findViewById(R.id.closePhotoPreview);
@@ -89,6 +92,17 @@ public class CameraActivity extends AppCompatActivity {
 
             // also make preview exit button visible
             closePhotoPreview.setVisibility(View.VISIBLE);
+        });
+
+        drawMode.setOnClickListener(v -> {
+            if (drawingMode)
+            {
+                drawingMode = false;
+            }
+            else
+            {
+                drawingMode = true;
+            }
         });
 
         // return to camera preview
