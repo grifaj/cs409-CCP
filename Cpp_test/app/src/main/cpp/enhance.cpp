@@ -96,85 +96,116 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
 
     std::string bugString;
 
+    bugString = "Starting box extraction";
+    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+
     if(!modelInitialisedFlag)
     {
         loadTranslationModel();
     }
 
-    // get input from bounding box
-    cv::Rect roiRect(location);
-    cv::Mat roi = colImg(roiRect);
-    // binarise image
-    cv::Mat binRoi = binariseBox(colImg, roiRect);
-
-    bugString = "Retrieved binary box";
+    bugString = "x: " + std::to_string(location.x);
+    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+    bugString = "y: " + std::to_string(location.y);
+    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+    bugString = "w: " + std::to_string(location.width);
+    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+    bugString = "h: " + std::to_string(location.height);
     __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
 
-    cv::Mat binRoiR;
-    cv::resize(binRoi, binRoiR, cv::Size(232, 232));
+    bugString = "img x: " + std::to_string(colImg.cols);
+    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+    bugString = "img y: " + std::to_string(colImg.rows);
+    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
 
-    const int cropSize = 224;
-    const int offsetW = (binRoiR.cols - cropSize) / 2;
-    const int offsetH = (binRoiR.rows - cropSize) / 2;
-    const cv::Rect roiBin(offsetW, offsetH, cropSize, cropSize);
-    binRoi = binRoiR(roiBin).clone();
+    int x_check = location.x < colImg.cols && location.x > 0;
+    int y_check = location.y < colImg.rows && location.y > 0;
+    int w_check = location.x+location.width < colImg.cols && location.x+location.width > 0;
+    int h_check = location.y+location.height < colImg.rows && location.y+location.height > 0;
 
-    binRoiR.release();
+    int total_check = x_check && y_check && w_check && h_check;
 
-    // Convert image data to ncnn format
-    // opencv image in bgr, model needs rgb
-    ncnn::Mat input = ncnn::Mat::from_pixels(binRoi.data, ncnn::Mat::PIXEL_BGR2RGB, binRoi.cols, binRoi.rows);
+    // get input from bounding box
+    if (total_check)
+    {
+        cv::Rect roiRect(location);
+        cv::Mat roi = colImg(roiRect);
+        // binarise image
+        cv::Mat binRoi = binariseBox(colImg, roiRect);
 
-    float means[] = {0.485, 0.456, 0.406};
-    float norms[] = {0.229, 0.224, 0.225};
+        bugString = "Retrieved binary box";
+        __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
 
-    input.substract_mean_normalize(means, norms);
+        cv::Mat binRoiR;
+        cv::resize(binRoi, binRoiR, cv::Size(232, 232));
 
-    // Inference
-    ncnn::Extractor extractor = translationModel.create_extractor();
-    extractor.set_light_mode(true);
-    extractor.input("input.1", input);
-    ncnn::Mat output;
-    extractor.extract("503", output);
+        const int cropSize = 224;
+        const int offsetW = (binRoiR.cols - cropSize) / 2;
+        const int offsetH = (binRoiR.rows - cropSize) / 2;
+        const cv::Rect roiBin(offsetW, offsetH, cropSize, cropSize);
+        binRoi = binRoiR(roiBin).clone();
 
-    float max = output[0];
-    std::string argMax;
-    for (int j=0; j<output.w; j++) {
-        if (output[j] > max){
-            max = output[j];
-            argMax = std::to_string(j);;
+        bugString = "Processed binary box";
+        __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+
+        binRoiR.release();
+
+        // Convert image data to ncnn format
+        // opencv image in bgr, model needs rgb
+        ncnn::Mat input = ncnn::Mat::from_pixels(binRoi.data, ncnn::Mat::PIXEL_BGR2RGB, binRoi.cols,
+                                                 binRoi.rows);
+
+        float means[] = {0.485, 0.456, 0.406};
+        float norms[] = {0.229, 0.224, 0.225};
+
+        input.substract_mean_normalize(means, norms);
+
+        // Inference
+        ncnn::Extractor extractor = translationModel.create_extractor();
+        extractor.set_light_mode(true);
+        extractor.input("input.1", input);
+        ncnn::Mat output;
+        extractor.extract("503", output);
+
+        float max = output[0];
+        std::string argMax;
+        for (int j = 0; j < output.w; j++) {
+            if (output[j] > max) {
+                max = output[j];
+                argMax = std::to_string(j);;
+            }
         }
+
+        // check for threshold TODO
+
+        // get file name
+        std::string filename = "overlays/";
+        filename.append(argMax);
+        filename.append(".bmp");
+        // load file from assets
+        AAsset *asset = AAssetManager_open(mgr, filename.c_str(), 0);
+        long size = AAsset_getLength(asset);
+        uchar *buffer = (uchar *) malloc(sizeof(uchar) * size);
+        AAsset_read(asset, buffer, size);
+        AAsset_close(asset);
+
+        // convert file to rgb image
+        cv::Mat rawData(1, size, CV_8UC1, (void *) buffer);
+        cv::Mat decodedImage = imdecode(rawData, cv::IMREAD_COLOR);
+
+        cv::Mat decodeColor;
+        cvtColor(decodedImage, decodeColor, cv::COLOR_BGR2RGB);
+        decodedImage.release();
+
+        //overlay image on rectangle
+
+        cv::Mat overlayImg;
+        cv::resize(decodeColor, overlayImg, roi.size());
+        decodeColor.release();
+
+        addWeighted(overlayImg, 1, roi, 0, 0, roi);
+        overlayImg.release();
     }
-
-    // check for threshold TODO
-
-   // get file name
-    std::string filename = "overlays/";
-    filename.append(argMax);
-    filename.append(".bmp");
-    // load file from assets
-    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), 0);
-    long size = AAsset_getLength(asset);
-    uchar* buffer = (uchar*) malloc (sizeof(uchar)*size);
-    AAsset_read (asset,buffer,size);
-    AAsset_close(asset);
-
-    // convert file to rgb image
-    cv::Mat rawData( 1, size, CV_8UC1, (void*)buffer);
-    cv::Mat decodedImage = imdecode(rawData, cv::IMREAD_COLOR);
-
-    cv::Mat decodeColor;
-    cvtColor(decodedImage,decodeColor, cv::COLOR_BGR2RGB);
-    decodedImage.release();
-
-    //overlay image on rectangle
-
-    cv::Mat overlayImg;
-    cv::resize(decodeColor, overlayImg, roi.size());
-    decodeColor.release();
-
-    addWeighted(overlayImg, 1, roi, 0, 0, roi);
-    overlayImg.release();
     //addWeighted(decodedImage, 1, binRoi, 0, 0, binRoi);
 }
 
