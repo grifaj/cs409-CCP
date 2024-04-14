@@ -580,7 +580,6 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
     std::vector<float>* confidences = new std::vector<float>();
 
     float confidenceThresh = 0.8;
-
     int sec_size = out_flatterned.w/5;
     for (int j=0; j<sec_size; j++)
     {
