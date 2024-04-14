@@ -52,6 +52,7 @@ public class CameraActivity extends AppCompatActivity {
     private Camera camera;
     private ImageView photoPreview;
     private ImageView closePhotoPreview;
+    private View resetZoom;
     private CameraSelector lensFacing = CameraSelector.DEFAULT_BACK_CAMERA;
     Mat cvMat;
     Bitmap bitmapPhoto;
@@ -71,6 +72,7 @@ public class CameraActivity extends AppCompatActivity {
         photoPreview = findViewById(R.id.photoPreview);
         ImageView switchLens = findViewById(R.id.switchLens);
         closePhotoPreview = findViewById(R.id.closePhotoPreview);
+        resetZoom = findViewById(R.id.resetZoom);
 
         // create camera view
         showImagePreview();
@@ -86,6 +88,9 @@ public class CameraActivity extends AppCompatActivity {
             // set photoPreview to image and make it visible
             photoPreview.setImageBitmap(bitmapPhoto);
             photoPreview.setVisibility(View.VISIBLE);
+
+            // remove other buttons
+            resetZoom.setVisibility(View.GONE);
 
             // stop camera view
             processCameraProvider.unbindAll();
@@ -107,12 +112,21 @@ public class CameraActivity extends AppCompatActivity {
             }
         });
 
+        resetZoom.setOnClickListener(v -> {
+            resetZoom.setAlpha(0.5f); // dim to animate
+            camera.getCameraControl().setZoomRatio(1); // set zoom back to normal
+            resetZoom.animate().alpha(1f).setDuration(1000); // return to normal
+        });
+
         // return to camera preview
         closePhotoPreview.setOnClickListener(v -> {
             showImagePreview();
             // set components back to invisible
             photoPreview.setVisibility(View.GONE);
             closePhotoPreview.setVisibility(View.GONE);
+
+            // add other buttons
+            resetZoom.setVisibility(View.VISIBLE);
         });
 
         switchLens.setOnClickListener(v -> {

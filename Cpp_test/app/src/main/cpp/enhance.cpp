@@ -11,7 +11,6 @@
 
 #include "net.h"
 #include "platform.h"
-#include "ncnn.h"
 
 ncnn::Net translationModel;
 ncnn::Net detectionModel;
@@ -67,7 +66,7 @@ void loadTranslationModel() {
 }
 
 void preloadModels(AAssetManager* manager) {
-
+    auto beg = std::chrono::high_resolution_clock::now();
     mgr = manager;
 
     int ret = translationModel.load_param(mgr,"mobilenet_v3_large_3-sim-opt.param");
@@ -89,6 +88,9 @@ void preloadModels(AAssetManager* manager) {
         __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
     }
     detmodelInitialisedFlag = true;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = duration_cast<std::chrono::milliseconds >(end - beg);
+    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "load models %f", duration.count()/1000.0);
 }
 
 
@@ -329,6 +331,7 @@ cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, in
 
     cvtColor(img, img, cv::COLOR_GRAY2BGR);
 
+    auto beg = std::chrono::high_resolution_clock::now();
     for (size_t i = 0; i < finalBoxes.size(); i++)
     {
         //rectangle(colImg, finalBoxes[i].tl(), finalBoxes[i].br(), cv::Scalar(0, 0, 255), 2);
@@ -504,6 +507,7 @@ void loadDetectionModel()
 }
 
 cv::Mat Detection(cv::Mat src, cv::Mat orig) {
+    auto beg = std::chrono::high_resolution_clock::now();
 
     std::string bugString;
 
@@ -534,19 +538,6 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
     {
         cv::copyMakeBorder(srcScaled, srcFinal, 0, 0, 0, 512-srcScaled.cols, cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
     }
-
-//    // Load model
-//    ncnn::Net net;
-//    int ret = net.load_param("model.ncnn.param");
-//    if (ret) {
-//        // __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
-//        std::cout << "Failed to load the model parameters" << std::endl;
-//    }
-//    ret = net.load_model("model.ncnn.bin");
-//    if (ret) {
-//        //__android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
-//        std::cout << "Failed to load the model weights" << std::endl;
-//    }
 
     // Convert image data to ncnn format
     // opencv image in bgr, model needs rgb
@@ -619,18 +610,26 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
     bugString = "NMS " + std::to_string(selected_boxes->size()) + " boxes";
     __android_log_print(ANDROID_LOG_DEBUG, "det_boxes", "%s", bugString.c_str());
 
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = duration_cast<std::chrono::milliseconds >(end - beg);
+    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "yolo dectection %f", duration.count()/1000.0);
+
+    beg = std::chrono::high_resolution_clock::now();
     for (std::size_t i = 0; i != selected_boxes->size(); i++)
     {
         //cv::rectangle(src, (*selected_boxes)[i], cv::Scalar(255, 0, 0), 1);
         displayOverlay(orig, (*selected_boxes)[i]);
     }
+    end = std::chrono::high_resolution_clock::now();
+    duration = duration_cast<std::chrono::milliseconds >(end - beg);
+    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "resnet inference %f with %d boxes", duration.count()/1000.0, selected_boxes->size());
 
     return orig;
 
 }
 
 cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg) {
-
+    auto beg = std::chrono::high_resolution_clock::now();
     mgr = manager;
 
     cv::Mat img;
@@ -670,7 +669,9 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg) {
 
     cv::Mat detectionFinal;
     cvtColor(detectionImg, detectionFinal, cv::COLOR_BGR2RGBA);
-
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = duration_cast<std::chrono::milliseconds >(end - beg);
+    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "total time %f", duration.count()/1000.0);
     return detectionFinal;
 }
 

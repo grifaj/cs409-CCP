@@ -66,6 +66,19 @@
         app:srcCompat="@drawable/ic_flip_camera_android"
         app:tint="@color/button" />
 
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/resetZoom"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_margin="32dp"
+        android:background="@drawable/circle_background"
+        android:padding="4dp"
+        app:layout_constraintBottom_toBottomOf="@id/cameraShutter"
+        app:layout_constraintStart_toEndOf="@id/cameraShutter"
+        app:layout_constraintTop_toTopOf="@id/cameraShutter"
+        android:text="1x"
+        app:tint="@color/button" />
+
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/drawMode"
         android:layout_width="60dp"
