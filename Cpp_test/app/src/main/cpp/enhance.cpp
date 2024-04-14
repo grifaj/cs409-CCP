@@ -55,11 +55,11 @@ cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
 
 void loadTranslationModel() {
     // Load model
-    int ret = translationModel.load_param(mgr,"seals-resnet50-sim-opt.param");
+    int ret = translationModel.load_param(mgr,"mobilenet_v3_large_3-sim-opt.param");
     if (ret) {
          __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
     }
-    ret = translationModel.load_model(mgr, "seals-resnet50-sim-opt.bin");
+    ret = translationModel.load_model(mgr, "mobilenet_v3_large_3-sim-opt.bin");
     if (ret) {
        __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
     }
@@ -70,11 +70,11 @@ void preloadModels(AAssetManager* manager) {
 
     mgr = manager;
 
-    int ret = translationModel.load_param(mgr,"seals-resnet50-sim-opt.param");
+    int ret = translationModel.load_param(mgr,"mobilenet_v3_large_3-sim-opt.param");
     if (ret) {
         __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
     }
-    ret = translationModel.load_model(mgr, "seals-resnet50-sim-opt.bin");
+    ret = translationModel.load_model(mgr, "mobilenet_v3_large_3-sim-opt.bin");
     if (ret) {
         __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
     }
@@ -96,85 +96,139 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
 
     std::string bugString;
 
+    bugString = "Starting box extraction";
+    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+
     if(!modelInitialisedFlag)
     {
         loadTranslationModel();
     }
 
+//    bugString = "x: " + std::to_string(location.x);
+//    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+//    bugString = "y: " + std::to_string(location.y);
+//    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+//    bugString = "w: " + std::to_string(location.width);
+//    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+//    bugString = "h: " + std::to_string(location.height);
+//    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+//
+//    bugString = "img x: " + std::to_string(colImg.cols);
+//    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+//    bugString = "img y: " + std::to_string(colImg.rows);
+//    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+
+    int x_check = location.x < colImg.cols && location.x > 0;
+    int y_check = location.y < colImg.rows && location.y > 0;
+    int w_check = location.x+location.width < colImg.cols && location.x+location.width > 0;
+    int h_check = location.y+location.height < colImg.rows && location.y+location.height > 0;
+
+    int total_check = x_check && y_check && w_check && h_check;
+
     // get input from bounding box
-    cv::Rect roiRect(location);
-    cv::Mat roi = colImg(roiRect);
-    // binarise image
-    cv::Mat binRoi = binariseBox(colImg, roiRect);
+    if (total_check)
+    {
+        cv::Rect roiRect(location);
+        cv::Mat roi = colImg(roiRect);
+        // binarise image
+        cv::Mat binRoi = binariseBox(colImg, roiRect);
 
-    bugString = "Retrieved binary box";
-    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
+        bugString = "Retrieved binary box";
+        __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
 
-    cv::Mat binRoiR;
-    cv::resize(binRoi, binRoiR, cv::Size(232, 232));
+        cv::Mat binRoiR;
+        cv::resize(binRoi, binRoiR, cv::Size(232, 232));
 
-    const int cropSize = 224;
-    const int offsetW = (binRoiR.cols - cropSize) / 2;
-    const int offsetH = (binRoiR.rows - cropSize) / 2;
-    const cv::Rect roiBin(offsetW, offsetH, cropSize, cropSize);
-    binRoi = binRoiR(roiBin).clone();
+        const int cropSize = 224;
+        const int offsetW = (binRoiR.cols - cropSize) / 2;
+        const int offsetH = (binRoiR.rows - cropSize) / 2;
+        const cv::Rect roiBin(offsetW, offsetH, cropSize, cropSize);
+        binRoi = binRoiR(roiBin).clone();
 
-    binRoiR.release();
+        bugString = "Processed binary box";
+        __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
 
-    // Convert image data to ncnn format
-    // opencv image in bgr, model needs rgb
-    ncnn::Mat input = ncnn::Mat::from_pixels(binRoi.data, ncnn::Mat::PIXEL_BGR2RGB, binRoi.cols, binRoi.rows);
+        binRoiR.release();
 
-    float means[] = {0.485, 0.456, 0.406};
-    float norms[] = {0.229, 0.224, 0.225};
+        // Convert image data to ncnn format
+        // opencv image in bgr, model needs rgb
+        ncnn::Mat input = ncnn::Mat::from_pixels(binRoi.data, ncnn::Mat::PIXEL_BGR2RGB, binRoi.cols,
+                                                 binRoi.rows);
 
-    input.substract_mean_normalize(means, norms);
+        float means[] = {0.485f*255.f, 0.456f*255.f, 0.406*255.f};
+        float norms[] = {1/0.229f/255.f, 1/0.224/255.f, 1/0.225f/255.f};
 
-    // Inference
-    ncnn::Extractor extractor = translationModel.create_extractor();
-    extractor.set_light_mode(true);
-    extractor.input("input.1", input);
-    ncnn::Mat output;
-    extractor.extract("503", output);
+        input.substract_mean_normalize(means, norms);
 
-    float max = output[0];
-    std::string argMax;
-    for (int j=0; j<output.w; j++) {
-        if (output[j] > max){
-            max = output[j];
-            argMax = std::to_string(j);;
+        // Inference
+        ncnn::Extractor extractor = translationModel.create_extractor();
+        //extractor.set_light_mode(true);
+        extractor.input("input.1", input);
+        ncnn::Mat output;
+        extractor.extract("499", output);
+
+//        bugString = "Output w: " + std::to_string(output.w);
+//        __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
+//        bugString = "Output h: " + std::to_string(output.h);
+//        __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
+//        bugString = "Output c: " + std::to_string(output.c);
+//        __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
+
+        float max = output[0];
+        std::string argMax;
+        for (int j = 0; j < output.w; j++) {
+
+//            bugString = "Class: " + std::to_string(j);
+//            __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
+//
+//            bugString = "Confidence: " + std::to_string(output[j]);
+//            __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
+
+            if (output[j] > max) {
+                max = output[j];
+                argMax = std::to_string(j+1);
+            }
+        }
+
+        // get file name
+        float confThreshold = 0.7;
+        if (max >= confThreshold)
+        {
+
+            bugString = "Max class: " + argMax;
+            __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
+
+            bugString = "Max confidence: " + std::to_string(max);
+            __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
+
+            std::string filename = "overlays/";
+            filename.append(argMax);
+            filename.append(".bmp");
+            // load file from assets
+            AAsset *asset = AAssetManager_open(mgr, filename.c_str(), 0);
+            long size = AAsset_getLength(asset);
+            uchar *buffer = (uchar *) malloc(sizeof(uchar) * size);
+            AAsset_read(asset, buffer, size);
+            AAsset_close(asset);
+
+            // convert file to rgb image
+            cv::Mat rawData(1, size, CV_8UC1, (void *) buffer);
+            cv::Mat decodedImage = imdecode(rawData, cv::IMREAD_COLOR);
+
+            cv::Mat decodeColor;
+            cvtColor(decodedImage, decodeColor, cv::COLOR_BGR2RGB);
+            decodedImage.release();
+
+            //overlay image on rectangle
+
+            cv::Mat overlayImg;
+            cv::resize(decodeColor, overlayImg, roi.size());
+            decodeColor.release();
+
+            addWeighted(overlayImg, 1, roi, 0, 0, roi);
+            overlayImg.release();
         }
     }
-
-    // check for threshold TODO
-
-   // get file name
-    std::string filename = "overlays/";
-    filename.append(argMax);
-    filename.append(".bmp");
-    // load file from assets
-    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), 0);
-    long size = AAsset_getLength(asset);
-    uchar* buffer = (uchar*) malloc (sizeof(uchar)*size);
-    AAsset_read (asset,buffer,size);
-    AAsset_close(asset);
-
-    // convert file to rgb image
-    cv::Mat rawData( 1, size, CV_8UC1, (void*)buffer);
-    cv::Mat decodedImage = imdecode(rawData, cv::IMREAD_COLOR);
-
-    cv::Mat decodeColor;
-    cvtColor(decodedImage,decodeColor, cv::COLOR_BGR2RGB);
-    decodedImage.release();
-
-    //overlay image on rectangle
-
-    cv::Mat overlayImg;
-    cv::resize(decodeColor, overlayImg, roi.size());
-    decodeColor.release();
-
-    addWeighted(overlayImg, 1, roi, 0, 0, roi);
-    overlayImg.release();
     //addWeighted(decodedImage, 1, binRoi, 0, 0, binRoi);
 }
 
@@ -525,13 +579,12 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
     std::vector<cv::Rect>* boxes = new std::vector<cv::Rect>();
     std::vector<float>* confidences = new std::vector<float>();
 
+    float confidenceThresh = 0.8;
     int sec_size = out_flatterned.w/5;
     for (int j=0; j<sec_size; j++)
     {
-        if (out_flatterned[j+(sec_size*4)] > 0.5)
+        if (out_flatterned[j+(sec_size*4)] > confidenceThresh)
         {
-            confidences->push_back(float(out_flatterned[j+(sec_size*4)]));
-
             float x = out_flatterned[j] / sf;
             float y = out_flatterned[j+(sec_size)] / sf;
             float w = out_flatterned[j+(sec_size*2)] / sf;
@@ -540,9 +593,15 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
             int left = int((x - 0.5 * w));
             int top = int((y - 0.5 * h));
 
-            int width = int(w);
-            int height = int(h);
-            boxes->push_back(cv::Rect(left, top, width, height));
+            if (left > 0 && top > 0 && w > 0 && h > 0)
+            {
+                int width = int(w);
+                int height = int(h);
+                boxes->push_back(cv::Rect(left, top, width, height));
+                confidences->push_back(float(out_flatterned[j+(sec_size*4)]));
+            }
+
+
         }
         else
         {
@@ -607,7 +666,7 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg) {
     graySmoothed.release();
 
     cv::Mat detectionImg;
-    detectionImg = Detection(img, img);
+    detectionImg = Detection(grayBGR, img);
 
     cv::Mat detectionFinal;
     cvtColor(detectionImg, detectionFinal, cv::COLOR_BGR2RGBA);

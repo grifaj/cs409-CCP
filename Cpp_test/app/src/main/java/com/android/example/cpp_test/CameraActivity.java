@@ -6,36 +6,47 @@ import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
+import android.content.Context;
+import androidx.camera.core.CameraInfoUnavailableException;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.DisplayOrientedMeteringPointFactory;
 import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
+import androidx.camera.core.SurfaceOrientedMeteringPointFactory;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 import android.content.res.AssetManager;
+import android.hardware.display.DisplayManager;
+import android.view.Display;
+import android.view.WindowManager;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 public class CameraActivity extends AppCompatActivity {
     static {
         System.loadLibrary("cpp_test");
     }
+    private boolean drawingMode;
     private PreviewView previewView;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private Camera camera;
@@ -51,10 +62,12 @@ public class CameraActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        drawingMode = false;
 
         previewView = findViewById(R.id.previewView);
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         ImageView cameraShutter = findViewById(R.id.cameraShutter);
+        ImageView drawMode = findViewById(R.id.drawMode);
         photoPreview = findViewById(R.id.photoPreview);
         ImageView switchLens = findViewById(R.id.switchLens);
         closePhotoPreview = findViewById(R.id.closePhotoPreview);
@@ -81,6 +94,19 @@ public class CameraActivity extends AppCompatActivity {
             closePhotoPreview.setVisibility(View.VISIBLE);
         });
 
+        drawMode.setOnClickListener(v -> {
+            if (drawingMode)
+            {
+                drawingMode = false;
+                drawMode.setBackgroundResource(R.drawable.circle_background);
+            }
+            else
+            {
+                drawingMode = true;
+                drawMode.setBackgroundResource(R.drawable.pressed_background);
+            }
+        });
+
         // return to camera preview
         closePhotoPreview.setOnClickListener(v -> {
             showImagePreview();
@@ -97,27 +123,55 @@ public class CameraActivity extends AppCompatActivity {
             showImagePreview();
         });
 
-//        previewView.setOnTouchListener((v, event) -> {
-//            if(event.getAction() == MotionEvent.ACTION_UP){
-//                //final Rect sensorArraySize = cameraProviderFuture.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-//                int x = (int) event.getX();
-//                int y = (int) event.getY();
-//
-//                MeteringPointFactory factory  = new MeteringPointFactory(
-//                        ((float) previewView.getWidth()), ((float) previewView.getHeight())
-//                );
-//                MeteringPoint meteringPoint = factory.createPoint(x,y);
-//                camera.getCameraControl().startFocusAndMetering(
-//                        new FocusMeteringAction.Builder(
-//                                meteringPoint,
-//                                FocusMeteringAction.FLAG_AF
-//                        ).build()
-//                     );
-//                return true;
-//            }
-//            return false;
-//        });
+        ScaleListener listener = new ScaleListener();
+        ScaleGestureDetector scaleGestureDetector = new ScaleGestureDetector(previewView.getContext(), listener);
 
+        previewView.setOnTouchListener((v, event) -> {
+            Log.d("TOUCH", "Screen touched");
+            scaleGestureDetector.onTouchEvent(event);
+            if(event.getAction() == MotionEvent.ACTION_DOWN)
+            {
+                Log.d("TOUCH", "Pressed");
+                return true;
+            }
+            if(event.getAction() == MotionEvent.ACTION_UP)
+            {
+                Log.d("TOUCH", "Released");
+                //final Rect sensorArraySize = cameraProviderFuture.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                float x = event.getX();
+                float y = event.getY();
+                String output = "x = " + String.valueOf(x) + " y = " + String.valueOf(y);
+                Log.d("TOUCH", output);
+
+                Display display = getDefaultDisplay(this);
+                MeteringPointFactory factory  = new DisplayOrientedMeteringPointFactory(display, camera.getCameraInfo(), ((float) previewView.getWidth()), ((float) previewView.getHeight()));
+                MeteringPoint meteringPoint = factory.createPoint(x,y);
+                try
+                {
+                    FocusMeteringAction.Builder builder = new FocusMeteringAction.Builder(meteringPoint, FocusMeteringAction.FLAG_AF);
+                    builder.disableAutoCancel();
+                    camera.getCameraControl().startFocusAndMetering(builder.build());
+                } catch (Exception CameraInfoUnavailableException)
+                {
+                    //Log.d("ERROR", "Cannot Access Camera", CameraInfoUnavailableException);
+                    Log.d("ERROR", "Cannot Access Camera");
+                }
+
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener
+    {
+        @Override
+        public boolean onScale(ScaleGestureDetector detector) {
+            float currentZoomRatio = Objects.requireNonNull(camera.getCameraInfo().getZoomState().getValue()).getZoomRatio();
+            float delta = detector.getScaleFactor();
+            camera.getCameraControl().setZoomRatio(currentZoomRatio * delta);
+            return true;
+        }
     }
 
     private void showImagePreview() {
@@ -134,7 +188,7 @@ public class CameraActivity extends AppCompatActivity {
                 processCameraProvider.unbindAll();
 
                 // lensFacing is used here
-                Camera camera = processCameraProvider.bindToLifecycle(this, lensFacing, imageCapture, preview);
+                camera = processCameraProvider.bindToLifecycle(this, lensFacing, imageCapture, preview);
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }
@@ -148,6 +202,11 @@ public class CameraActivity extends AppCompatActivity {
         callBoundingBoxes(cvMat.getNativeObjAddr(), getAssets());
         //convert back
         Utils.matToBitmap(cvMat,bitmapPhoto);
+    }
+
+    public Display getDefaultDisplay(CameraActivity activity) {
+        WindowManager windowManager = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
+        return windowManager.getDefaultDisplay();
     }
 
     public native void callBoundingBoxes(long image, AssetManager assetManager);
