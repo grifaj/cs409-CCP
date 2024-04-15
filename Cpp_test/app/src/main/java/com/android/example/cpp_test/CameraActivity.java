@@ -53,14 +53,14 @@ public class CameraActivity extends AppCompatActivity {
     private PreviewView previewView;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private Camera camera;
-    private ImageView photoPreview;
-    private ImageView closePhotoPreview;
+    private ImageView photoPreview, closePhotoPreview, swapImage;
     private View resetZoom;
     private CameraSelector lensFacing = CameraSelector.DEFAULT_BACK_CAMERA;
     private DrawView drawView;
-    Mat cvMat;
-    Bitmap bitmapPhoto;
-    ProcessCameraProvider processCameraProvider;
+    private Mat cvMat;
+    private Bitmap bitmapPhoto, originalBitmap;
+    private ProcessCameraProvider processCameraProvider;
+    private boolean translate = true;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -77,11 +77,8 @@ public class CameraActivity extends AppCompatActivity {
         ImageView switchLens = findViewById(R.id.switchLens);
         closePhotoPreview = findViewById(R.id.closePhotoPreview);
         resetZoom = findViewById(R.id.resetZoom);
-
-//        drawView = new DrawView(this);
-//        drawView.draw(drawView.canvas);
+        swapImage = findViewById(R.id.swapImage);
         drawView = findViewById(R.id.drawView);
-        drawView.setVisibility(View.GONE);
 
         // create camera view
         showImagePreview();
@@ -91,8 +88,10 @@ public class CameraActivity extends AppCompatActivity {
         // freeze camera preview on taken photo
         cameraShutter.setOnClickListener(v -> {
             // take photo from preview
-            bitmapPhoto = previewView.getBitmap();
-            if (drawingMode == false)
+            originalBitmap = previewView.getBitmap();
+            assert originalBitmap != null;
+            bitmapPhoto = originalBitmap.copy(originalBitmap.getConfig(), true);
+            if (!drawingMode)
             {
                 detectChars(); // sets bitmap to have chars on it
             }
@@ -113,6 +112,22 @@ public class CameraActivity extends AppCompatActivity {
 
             // also make preview exit button visible
             closePhotoPreview.setVisibility(View.VISIBLE);
+            swapImage.setVisibility(View.VISIBLE);
+        });
+
+        swapImage.setOnClickListener(v -> {
+            resetZoom.setAlpha(0.5f); // dim to animate
+            resetZoom.animate().alpha(1f).setDuration(1000); // return to normal
+
+            // swap to blank image
+            if(translate){
+                photoPreview.setImageBitmap(originalBitmap);
+            }else{
+                // swap to translation overlay
+                photoPreview.setImageBitmap(bitmapPhoto);
+            }
+            translate = !translate;
+
         });
 
         drawMode.setOnClickListener(v -> {
@@ -146,6 +161,7 @@ public class CameraActivity extends AppCompatActivity {
             // set components back to invisible
             photoPreview.setVisibility(View.GONE);
             closePhotoPreview.setVisibility(View.GONE);
+            swapImage.setVisibility(View.GONE);
 
             // add other buttons
             resetZoom.setVisibility(View.VISIBLE);

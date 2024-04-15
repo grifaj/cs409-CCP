@@ -48,6 +48,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/transparent"
+        android:visibility="gone"
         app:minimumSide="60dp"
         app:resizeCornerDrawable="@drawable/edge_circle"
         app:moveCornerDrawable="@drawable/move_box_circle"
@@ -93,7 +94,7 @@
         app:layout_constraintBottom_toBottomOf="@id/cameraShutter"
         app:layout_constraintStart_toEndOf="@id/cameraShutter"
         app:layout_constraintTop_toTopOf="@id/cameraShutter"
-        android:text="1x"
+        android:text="@string/_1x"
         app:tint="@color/button" />
 
     <androidx.appcompat.widget.AppCompatImageView
@@ -135,5 +136,18 @@
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_close"
         app:tint="@color/white" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/swapImage"
+        android:layout_width="92dp"
+        android:layout_height="92dp"
+        android:layout_margin="32dp"
+        android:visibility="gone"
+        android:background="@drawable/circle_background"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/swap"
+        app:tint="@color/button" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
