@@ -89,7 +89,7 @@ void preloadModels(AAssetManager* manager) {
     }
     detmodelInitialisedFlag = true;
     auto end = std::chrono::high_resolution_clock::now();
-    auto duration = duration_cast<std::chrono::milliseconds >(end - beg);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
     __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "load models %f", duration.count()/1000.0);
 }
 
@@ -343,9 +343,8 @@ cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, in
     return colImg;
 }
 
-cv::Mat gammaCorrect(cv::Mat img, double gam) {
-
-
+cv::Mat gammaCorrect(cv::Mat img, double gam)
+{
     cv::Mat hsvImg;
     cvtColor(img, hsvImg, cv::COLOR_BGR2HSV);
 
@@ -570,7 +569,7 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
     std::vector<cv::Rect>* boxes = new std::vector<cv::Rect>();
     std::vector<float>* confidences = new std::vector<float>();
 
-    float confidenceThresh = 0.8;
+    float confidenceThresh = 0.7;
     int sec_size = out_flatterned.w/5;
     for (int j=0; j<sec_size; j++)
     {
@@ -611,7 +610,7 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
     __android_log_print(ANDROID_LOG_DEBUG, "det_boxes", "%s", bugString.c_str());
 
     auto end = std::chrono::high_resolution_clock::now();
-    auto duration = duration_cast<std::chrono::milliseconds >(end - beg);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
     __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "yolo dectection %f", duration.count()/1000.0);
 
     beg = std::chrono::high_resolution_clock::now();
@@ -621,8 +620,8 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
         displayOverlay(orig, (*selected_boxes)[i]);
     }
     end = std::chrono::high_resolution_clock::now();
-    duration = duration_cast<std::chrono::milliseconds >(end - beg);
-    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "resnet inference %f with %d boxes", duration.count()/1000.0, selected_boxes->size());
+    duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
+    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "resnet inference %f with %d boxes", duration.count()/1000.0, (int) selected_boxes->size());
 
     return orig;
 
@@ -670,9 +669,28 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg) {
     cv::Mat detectionFinal;
     cvtColor(detectionImg, detectionFinal, cv::COLOR_BGR2RGBA);
     auto end = std::chrono::high_resolution_clock::now();
-    auto duration = duration_cast<std::chrono::milliseconds >(end - beg);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
     __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "total time %f", duration.count()/1000.0);
     return detectionFinal;
+}
+
+cv::Mat captureBoxImage(AAssetManager* manager, cv::Mat srcImg, int x, int y, int w, int h) {
+    auto beg = std::chrono::high_resolution_clock::now();
+    mgr = manager;
+    cv::Rect box = cv::Rect(x, y, w, h);
+
+    cv::Mat img;
+    cvtColor(srcImg, img, cv::COLOR_RGBA2BGR);
+
+    cv::Mat translateBox;
+    displayOverlay(img, box);
+
+    cv::Mat translateFinal;
+    cvtColor(img, translateFinal, cv::COLOR_BGR2RGBA);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
+    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "total time %f", duration.count()/1000.0);
+    return translateFinal;
 }
 
 //int main(int, char**) {

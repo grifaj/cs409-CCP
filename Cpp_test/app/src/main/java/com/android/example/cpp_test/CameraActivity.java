@@ -2,8 +2,15 @@ package com.android.example.cpp_test;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -33,6 +40,7 @@ import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
 import java.util.Objects;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 import dalvik.annotation.optimization.FastNative;
@@ -49,6 +57,7 @@ public class CameraActivity extends AppCompatActivity {
     private ImageView closePhotoPreview;
     private View resetZoom;
     private CameraSelector lensFacing = CameraSelector.DEFAULT_BACK_CAMERA;
+    private DrawView drawView;
     Mat cvMat;
     Bitmap bitmapPhoto;
     ProcessCameraProvider processCameraProvider;
@@ -69,6 +78,11 @@ public class CameraActivity extends AppCompatActivity {
         closePhotoPreview = findViewById(R.id.closePhotoPreview);
         resetZoom = findViewById(R.id.resetZoom);
 
+//        drawView = new DrawView(this);
+//        drawView.draw(drawView.canvas);
+        drawView = findViewById(R.id.drawView);
+        drawView.setVisibility(View.GONE);
+
         // create camera view
         showImagePreview();
 
@@ -78,7 +92,14 @@ public class CameraActivity extends AppCompatActivity {
         cameraShutter.setOnClickListener(v -> {
             // take photo from preview
             bitmapPhoto = previewView.getBitmap();
-            detectChars(); // sets bitmap to have chars on it
+            if (drawingMode == false)
+            {
+                detectChars(); // sets bitmap to have chars on it
+            }
+            else
+            {
+                detectBoxChars();
+            }
 
             // set photoPreview to image and make it visible
             photoPreview.setImageBitmap(bitmapPhoto);
@@ -99,12 +120,18 @@ public class CameraActivity extends AppCompatActivity {
             {
                 drawingMode = false;
                 drawMode.setBackgroundResource(R.drawable.circle_background);
+
+                drawView.setVisibility(View.GONE);
             }
             else
             {
                 drawingMode = true;
                 drawMode.setBackgroundResource(R.drawable.pressed_background);
+
+                drawView.setVisibility(View.VISIBLE);
             }
+
+            drawView.setDrawMode(drawingMode);
         });
 
         resetZoom.setOnClickListener(v -> {
@@ -136,6 +163,11 @@ public class CameraActivity extends AppCompatActivity {
         ScaleGestureDetector scaleGestureDetector = new ScaleGestureDetector(previewView.getContext(), listener);
 
         previewView.setOnTouchListener((v, event) -> {
+            if (drawingMode)
+            {
+                Log.d("TOUCH", "Passing to next listener");
+                return false;
+            }
             Log.d("TOUCH", "Screen touched");
             scaleGestureDetector.onTouchEvent(event);
             if(event.getAction() == MotionEvent.ACTION_DOWN)
@@ -170,6 +202,12 @@ public class CameraActivity extends AppCompatActivity {
             }
             return false;
         });
+
+        drawView.setOnTouchListener((v, event) -> {
+            Log.d("TOUCH", "Passed to me");
+            return drawView.onTouchEvent(event);
+        });
+
     }
 
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener
@@ -213,6 +251,15 @@ public class CameraActivity extends AppCompatActivity {
         Utils.matToBitmap(cvMat,bitmapPhoto);
     }
 
+    private void detectBoxChars() {
+        cvMat = new Mat();
+        // convert to opencv Matrix format
+        Utils.bitmapToMat(bitmapPhoto, cvMat);
+        callBoundingBoxes2(cvMat.getNativeObjAddr(), drawView.getTopX(), drawView.getTopY(), drawView.getBoxWidth(), drawView.getBoxHeight(), getAssets());
+        //convert back
+        Utils.matToBitmap(cvMat,bitmapPhoto);
+    }
+
     public Display getDefaultDisplay(CameraActivity activity) {
         WindowManager windowManager = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
         return windowManager.getDefaultDisplay();
@@ -220,4 +267,6 @@ public class CameraActivity extends AppCompatActivity {
 
     @FastNative
     public native void callBoundingBoxes(long image, AssetManager assetManager);
+    @FastNative
+    public native void callBoundingBoxes2(long image, int x, int y, int w, int h, AssetManager assetManager);
 }

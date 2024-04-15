@@ -39,3 +39,14 @@ Java_com_android_example_cpp_1test_CameraActivity_callBoundingBoxes(JNIEnv *env,
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     *matImage =  captureImage(mgr,*matImage);
 }
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_android_example_cpp_1test_CameraActivity_callBoundingBoxes2(JNIEnv *env, jobject thiz, jlong image, jint x_box, jint y_box, jint w_box, jint h_box,  jobject assetManager) {
+    cv::Mat* matImage=(cv::Mat*)image;
+    int x = x_box;
+    int y = y_box;
+    int w = w_box;
+    int h = h_box;
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    *matImage =  captureBoxImage(mgr,*matImage,x,y,w,h);
+}

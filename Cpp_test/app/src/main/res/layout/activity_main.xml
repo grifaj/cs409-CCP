@@ -14,7 +14,8 @@
   ~ limitations under the License.
   -->
 
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
@@ -41,6 +42,22 @@
         android:layout_height="64dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <com.android.example.cpp_test.DrawView
+        android:id="@+id/drawView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/transparent"
+        app:minimumSide="60dp"
+        app:resizeCornerDrawable="@drawable/edge_circle"
+        app:moveCornerDrawable="@drawable/move_box_circle"
+        app:cornerColor="@color/blue"
+        app:edgeColor="@color/white"
+        app:outsideCropColor="@color/transparent_50"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:cornersSize="30dp">
+    </com.android.example.cpp_test.DrawView>
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/cameraShutter"
