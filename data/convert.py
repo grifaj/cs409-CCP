@@ -8,7 +8,7 @@ import numpy as np
 # import onnx_tf
 import pandas as pd
 
-def convert_to_onnx(build_path, model_name):
+def convert_to_onnx():
     '''
     Convert Pytorch model to ONNX format.
 
@@ -28,10 +28,18 @@ def convert_to_onnx(build_path, model_name):
     # Generate dummy input to model
     x = torch.rand(1, 3, 224, 224).to("cuda")
 
+    # Put model into prediction model before exporting
+    model.eval()
+
     print("[INFO] Exporting to ONNX format")
     # Export model to onnx format
-    torch_out = onnx.export(model, x, f"{build_path}/{model_name}.onnx", export_params=True)
+    torch_out = onnx.export(model, 
+                            x, 
+                            f"{C.BUILD_PATH}/{C.ONNX_MODEL_NAME}.onnx", 
+                            export_params=True,
+                            input_names=['input'],
+                            output_names=['output'])
 
 if __name__ == "__main__":
     # Convert Pytorch model to onnx format
-    convert_to_onnx(build_path, model_name)
+    convert_to_onnx()
