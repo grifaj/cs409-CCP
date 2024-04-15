@@ -79,7 +79,7 @@ def init_dataset(model_type):
         x = data['file_path']
         y = data['label']
         num_classes = np.unique(y)[-1]
-        x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=C.TEST_SIZE)
+        x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=C.TEST_SIZE, stratify=y)
 
         if model_type == 'resnet_50':
             weights = models.ResNet50_Weights.DEFAULT
@@ -138,25 +138,30 @@ def init_model(num_classes, model_type, pretrained=True, log=True): #, use_cpu=F
                     nn.Linear(1600, 512),
                     nn.LeakyReLU(negative_slope=0.1, inplace=True),    
                     nn.Dropout(p=0.2),
-                    nn.Linear(512, num_classes)).to(device)
+                    nn.Linear(512, num_classes),
+                    nn.Softmax(dim=1)
+        ).to(device)
     elif model_type == 'mobilenet_v3_large':
         model.classifier = nn.Sequential(
-            nn.Linear(in_features=960, out_features=1400, bias=True),
+            nn.Linear(in_features=960, out_features=1280, bias=True),
             nn.Hardswish(),
             nn.Dropout(p=0.2, inplace=True),
-            nn.Linear(in_features=1400, out_features=num_classes, bias=True)
+            nn.Linear(in_features=1280, out_features=num_classes, bias=True),
+            nn.Softmax(dim=1)
         ).to(device)
 
-    criterion = nn.CrossEntropyLoss()
+    # Use NLLLoss so that softmax can be applied in final layer of model, softmax + NLLLoss is equivalent to CrossEntropyLoss
+    criterion = nn.NLLLoss()
     optimisers = [
         optim.Adam(model.parameters(), lr=C.LEARNING_RATE, betas=C.ADAM_BETA),
     ]
 
     model.to(device)
 
+    logging.info(f"Using device: {device.type}")
+    logging.info(f"Pretrained: {pretrained}")
+
     if log:
-        logging.info(f"Using device: {device.type}")
-        logging.info(f"Pretrained: {pretrained}")
         logging.info(model)
 
     return model, criterion, optimisers
@@ -212,7 +217,7 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch
                 labels = labels.to(device)
 
                 outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                loss = criterion(torch.log(outputs), labels)
 
                 if phase == 'train':
                     zero_grads(optimisers)
@@ -222,6 +227,13 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch
                 _, preds = torch.max(outputs, 1)
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
+                print(labels)
+                print()
+                print(preds)
+                for i in range(len(preds)):
+                    print(f"Actual: {labels.data[i]}. Predicted: {preds[i]}")
+                print()
+                print()
 
             epochLoss = running_loss / datasets[phase].__len__()
             epochAccuracy = running_corrects.double() / datasets[phase].__len__()
@@ -235,10 +247,9 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch
 
 
 def main(): 
-    model_types = ['resnet_50', 'mobilenet_v3_large']
-
+    pretrained = C.PRETRAINED
     # Select the model type to be trained
-    model_type = model_types[1]
+    model_type = C.MODEL_NAME
     logging.info("Loading dataset")
     logging.info("Loading data loaders")
     dataloaders, datasets, num_classes = init_dataset(model_type)
@@ -246,7 +257,7 @@ def main():
     logging.info("Done")
     epoch=0
     logging.info(f"Loading {model_type}")
-    model, criterion, optimisers = init_model(num_classes, model_type, pretrained=False, log=True)#, use_cpu, pretrained)
+    model, criterion, optimisers = init_model(num_classes, model_type, pretrained=pretrained, log=False)#, use_cpu, pretrained)
     if C.LOAD_CHECKPOINT_PATH != "":
         model, epoch = load_model(model, optimisers, C.LOAD_CHECKPOINT_PATH)  
     logging.info("Done")

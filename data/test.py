@@ -21,7 +21,7 @@ def test_model():
     model, _ = train.load_model(
         model, 
         optimiser, 
-        "/dcs/large/seal-script-project-checkpoints/mobilenetv3large/2024-04-11/CK-99.pt"
+        "/dcs/large/seal-script-project-checkpoints/mobilenet_v3_large/2024-04-13/CK-59.pt"
         )
         
     model.to(device)
@@ -37,16 +37,19 @@ def test_model():
     transformation = weights.transforms()
 
     # Get PyTorch predictions
-    csv = 'trainData.csv'
-    numRands = 1000
+    csv = C.DATA_PATH
+    numRands = 10
     dataset = pd.read_csv(csv, names=['image', 'label'], index_col=False)
     samples = dataset.sample(n=numRands, ignore_index=True) # Get sample of dataset with indexing reset to 0,1,...,n-1
-
+    samples = dataset[dataset['label'] == 417]
+    print(samples)
     # print(samples)
 
     correct = 0
     pytorch_predictions = np.zeros((numRands,))
     # tflite_predictions = np.zeros((numRands,))
+
+    model.eval()
     for i, row in samples.iterrows():
         
         image = row['image']
@@ -62,6 +65,7 @@ def test_model():
         input = torch.unsqueeze(input, 0).to(device)
         # print(input.shape)
         label = torch.as_tensor(label)
+
         label = label.to(device)
 
         output = model(input)
@@ -75,18 +79,27 @@ def test_model():
         print(f'[INFO] Testing image: {image}')
             # print(output)
 
-        _, preds = torch.max(output, 1)
+        conf, preds = torch.max(output, 1)
+        low_conf, _ = torch.min(output, 1)
         # prediction = int(torch.max(output, 1).cpu().numpy())
         # if i == 0:
-        print(preds)
-        print(torch.max(output,1))
+        print(f"Prediction: {preds}")
+        print(f"Actual: {value}")
+        print(f"Confidence: {conf}")
+        print(f"Lowest conf: {low_conf}")
+        print()
         correct += torch.sum(preds == label.data)
         # prediction = random.randint(0, 1075)
 
-        # pytorch_predictions[i] = prediction
 
     print(correct)
-    print(f'[INFO] Accuracy = {round(correct / numRands * 100, 2)}')
+    print(f'[INFO] Accuracy = {round(correct.item() / numRands * 100, 2)}')
+
+def generate_test_batch(n):
+    csv = C.DATA_PATH
+    numRands = 10
+    dataset = pd.read_csv(csv, names=['image', 'label'], index_col=False)
+    samples = dataset.sample(n=numRands, ignore_index=True) # Get sample of dataset with indexing reset to 0,1,...,n-1
 
 if __name__=="__main__":
     test_model()

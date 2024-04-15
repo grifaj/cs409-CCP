@@ -25,9 +25,11 @@ class Config:
     # load model checkpoint path -- leave blank to not load
     LOAD_CHECKPOINT_PATH = ""
 
-class Config_resnet:
-    # model name
-    MODEL_NAME = "resnet50"
+class Config_2:
+    model_types = ['resnet_50', 'mobilenet_v3_large']
+
+    # model name - select architecture to train
+    MODEL_NAME = model_types[1]
     # path the python logger will store files to
     LOG_PATH = "./run.log"
     # path to read file names from (needs to be in a train.csv format)
@@ -40,9 +42,11 @@ class Config_resnet:
     # shuffle order of data in torch data loader
     SHUFFLE_DATA = True 
     # proportion of data for testing
-    TEST_SIZE = 0.25
+    TEST_SIZE = 0.3
     # size of square images
     IMAGE_SIZE = 128
+    #
+    PRETRAINED = True
     
     # learning rate
     LEARNING_RATE = 0.0001
@@ -50,10 +54,17 @@ class Config_resnet:
     ADAM_BETA = (0.5, 0.99)
     
     # total training epochs
-    EPOCHS = 150
+    EPOCHS = 100
     # path to save checkpoints
-    CHECKPOINT_PATH = "/dcs/large/seal-script-project-checkpoints/resnet50/"
+    CHECKPOINT_PATH = f"/dcs/large/seal-script-project-checkpoints/{MODEL_NAME}{'_pretrained' if PRETRAINED else ''}/"
     # save checkpoint every n epochs
     SAVE_EVERY_N = 20
     # load model checkpoint path -- leave blank to not load
-    LOAD_CHECKPOINT_PATH = ""
+    LOAD_CHECKPOINT_PATH = "/dcs/large/seal-script-project-checkpoints/mobilenet_v3_large/2024-04-13/CK-59.pt"
+
+    # path of checkpoint to convert
+    CONVERT_CHECKPOINT_PATH = "/dcs/large/seal-script-project-checkpoints/mobilenet_v3_large/2024-04-13/CK-59.pt"
+    # path to store ONNX models
+    BUILD_PATH = './build'
+    # name of converted ONNX model
+    ONNX_MODEL_NAME = f"{MODEL_NAME}_3"
