@@ -1,5 +1,6 @@
 package com.android.example.cpp_test;
 
+import android.animation.Animator;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,6 +17,7 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
@@ -61,6 +63,7 @@ public class CameraActivity extends AppCompatActivity {
     private Bitmap bitmapPhoto, originalBitmap;
     private ProcessCameraProvider processCameraProvider;
     private boolean translate = true;
+    protected float zoom;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -152,6 +155,7 @@ public class CameraActivity extends AppCompatActivity {
         resetZoom.setOnClickListener(v -> {
             resetZoom.setAlpha(0.5f); // dim to animate
             camera.getCameraControl().setZoomRatio(1); // set zoom back to normal
+            zoom = 1.0f;
             resetZoom.animate().alpha(1f).setDuration(1000); // return to normal
         });
 
@@ -208,6 +212,9 @@ public class CameraActivity extends AppCompatActivity {
                     FocusMeteringAction.Builder builder = new FocusMeteringAction.Builder(meteringPoint, FocusMeteringAction.FLAG_AF);
                     builder.disableAutoCancel();
                     camera.getCameraControl().startFocusAndMetering(builder.build());
+
+                    animateFocusRing(x, y);
+
                 } catch (Exception CameraInfoUnavailableException)
                 {
                     //Log.d("ERROR", "Cannot Access Camera", CameraInfoUnavailableException);
@@ -226,17 +233,6 @@ public class CameraActivity extends AppCompatActivity {
 
     }
 
-    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener
-    {
-        @Override
-        public boolean onScale(ScaleGestureDetector detector) {
-            float currentZoomRatio = Objects.requireNonNull(camera.getCameraInfo().getZoomState().getValue()).getZoomRatio();
-            float delta = detector.getScaleFactor();
-            camera.getCameraControl().setZoomRatio(currentZoomRatio * delta);
-            return true;
-        }
-    }
-
     private void showImagePreview() {
         cameraProviderFuture.addListener(() -> {
             ImageCapture imageCapture = new ImageCapture.Builder()
@@ -252,10 +248,55 @@ public class CameraActivity extends AppCompatActivity {
 
                 // lensFacing is used here
                 camera = processCameraProvider.bindToLifecycle(this, lensFacing, imageCapture, preview);
+                camera.getCameraControl().setZoomRatio(zoom);
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }
         }, ContextCompat.getMainExecutor(this));
+    }
+
+    private void animateFocusRing(float x, float y)
+    {
+        ImageView focusRing = findViewById(R.id.focusRingView);
+
+        float width = focusRing.getWidth();
+        float height = focusRing.getHeight();
+
+        focusRing.setX(x - width/2);
+        focusRing.setY(y - height/2);
+
+        focusRing.setVisibility(View.VISIBLE);
+        focusRing.setAlpha(1F);
+
+        focusRing.animate()
+                .setStartDelay(500)
+                .setDuration(300)
+                .alpha(0F)
+                .setListener(new Animator.AnimatorListener()
+                {
+
+                    @Override
+                    public void onAnimationEnd(@NonNull Animator animation)
+                    {
+                        focusRing.setVisibility(View.INVISIBLE);
+
+                    }
+                    @Override
+                    public void onAnimationStart(@NonNull Animator animation)
+                    {
+                        return;
+                    }
+                    @Override
+                    public void onAnimationCancel(@NonNull Animator animation)
+                    {
+                        return;
+                    }
+                    @Override
+                    public void onAnimationRepeat(@NonNull Animator animation)
+                    {
+                        return;
+                    }
+                });
     }
 
     private void detectChars() {
@@ -279,6 +320,18 @@ public class CameraActivity extends AppCompatActivity {
     public Display getDefaultDisplay(CameraActivity activity) {
         WindowManager windowManager = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
         return windowManager.getDefaultDisplay();
+    }
+
+    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener
+    {
+        @Override
+        public boolean onScale(ScaleGestureDetector detector) {
+            float currentZoomRatio = Objects.requireNonNull(camera.getCameraInfo().getZoomState().getValue()).getZoomRatio();
+            float delta = detector.getScaleFactor();
+            camera.getCameraControl().setZoomRatio(currentZoomRatio * delta);
+            zoom = currentZoomRatio * delta;
+            return true;
+        }
     }
 
     @FastNative

@@ -36,6 +36,14 @@
         app:layout_constraintVertical_bias="1.0">
     </androidx.camera.view.PreviewView>
 
+    <ImageView
+        android:id="@+id/focusRingView"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:src="@drawable/tap_circle"
+        android:visibility="invisible">
+    </ImageView>
+
     <View
         android:id="@+id/focusPoint"
         android:layout_width="64dp"
