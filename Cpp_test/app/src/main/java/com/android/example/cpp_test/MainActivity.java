@@ -25,13 +25,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if(OpenCVLoader.initDebug())
+        if(OpenCVLoader.initLocal())
             Log.d("Loaded","success");
         else
             Log.d("Loaded","error");
-
-        Log.d("Loaded",stringFromJNI());
-        Log.d("Loaded",validate(500,500));
 
         preloadModels(getAssets());
 
@@ -62,8 +59,5 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    public native String stringFromJNI();
-    public native String validate(long madAddrGr,long matAddrRgba);
-    public native void preloadModels(AssetManager assetManager);// makes it crash for some reason
-
+    public native void preloadModels(AssetManager assetManager);
 }

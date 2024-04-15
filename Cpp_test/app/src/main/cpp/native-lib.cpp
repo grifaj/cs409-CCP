@@ -13,16 +13,17 @@
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_android_example_cpp_1test_MainActivity_stringFromJNI(JNIEnv *env, jobject thiz) {
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_stringFromJNI(JNIEnv *env, jobject thiz) {
     std::string hello = "Hello from C++";
     return env->NewStringUTF(hello.c_str());
 }
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_android_example_cpp_1test_MainActivity_validate(JNIEnv *env, jobject thiz, jlong mad_addr_gr,jlong mat_addr_rgba) {
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_validate(JNIEnv *env, jobject thiz, jlong mad_addr_gr,jlong mat_addr_rgba) {
     cv::Rect();
     cv::Mat();
-    std::string hello2="hello from validate";
+    ncnn::Mat();
+    std::string hello2="libraries load";
     return env->NewStringUTF(hello2.c_str());
 }
 extern "C"

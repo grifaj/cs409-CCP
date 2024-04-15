@@ -1,10 +1,7 @@
 package com.android.example.cpp_test;
 
 import android.annotation.SuppressLint;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.Rect;
-import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -16,7 +13,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
 import android.content.Context;
-import androidx.camera.core.CameraInfoUnavailableException;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.DisplayOrientedMeteringPointFactory;
 import androidx.camera.core.FocusMeteringAction;
@@ -24,13 +20,10 @@ import androidx.camera.core.ImageCapture;
 import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
-import androidx.camera.core.SurfaceOrientedMeteringPointFactory;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
-import androidx.lifecycle.LifecycleOwner;
 import android.content.res.AssetManager;
-import android.hardware.display.DisplayManager;
 import android.view.Display;
 import android.view.WindowManager;
 
@@ -41,6 +34,8 @@ import org.opencv.core.Mat;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+
+import dalvik.annotation.optimization.FastNative;
 
 public class CameraActivity extends AppCompatActivity {
     static {
@@ -154,7 +149,7 @@ public class CameraActivity extends AppCompatActivity {
                 //final Rect sensorArraySize = cameraProviderFuture.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
                 float x = event.getX();
                 float y = event.getY();
-                String output = "x = " + String.valueOf(x) + " y = " + String.valueOf(y);
+                String output = "x = " + x + " y = " + y;
                 Log.d("TOUCH", output);
 
                 Display display = getDefaultDisplay(this);
@@ -223,5 +218,6 @@ public class CameraActivity extends AppCompatActivity {
         return windowManager.getDefaultDisplay();
     }
 
+    @FastNative
     public native void callBoundingBoxes(long image, AssetManager assetManager);
 }

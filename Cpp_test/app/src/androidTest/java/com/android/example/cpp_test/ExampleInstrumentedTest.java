@@ -17,10 +17,24 @@ import static org.junit.Assert.*;
  */
 @RunWith(AndroidJUnit4.class)
 public class ExampleInstrumentedTest {
+    static {
+        System.loadLibrary("cpp_test");
+    }
     @Test
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         assertEquals("com.android.example.cpp_test", appContext.getPackageName());
     }
+    @Test
+    public void jni_isLinked(){
+        assertEquals("Hello from C++",stringFromJNI());
+    }
+    @Test
+    public void libraries_load(){
+        assertEquals("libraries load", validate(500,500));
+    }
+
+    public native String validate(long madAddrGr,long matAddrRgba);
+    public native String stringFromJNI();
 }
