@@ -44,13 +44,6 @@
         android:visibility="invisible">
     </ImageView>
 
-    <View
-        android:id="@+id/focusPoint"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
     <com.android.example.cpp_test.DrawView
         android:id="@+id/drawView"
         android:layout_width="match_parent"
