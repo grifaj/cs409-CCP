@@ -50,24 +50,33 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     static {
         System.loadLibrary("cpp_test");
     }
-    private boolean drawingMode;
-    private PreviewView previewView;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private Camera camera;
-    private ImageView photoPreview, closePhotoPreview, swapImage;
-    private View resetZoom;
     private CameraSelector lensFacing = CameraSelector.DEFAULT_BACK_CAMERA;
+    private ProcessCameraProvider processCameraProvider;
+
+    private PreviewView previewView;
+    private ImageView photoPreview, closePhotoPreview, swapImage;
     private DrawView drawView;
+    private View resetZoom;
+
+
     private Mat cvMat;
     private Bitmap bitmapPhoto, originalBitmap;
-    private ProcessCameraProvider processCameraProvider;
-    private boolean translate = true;
-    protected float zoom;
+
     private SensorManager sensorMan;
     private Sensor accelerometer;
+
+    protected float zoom;
     private float mAccel;
     private float mAccelCurrent;
+
     private int accelThreshCount;
+
+    private boolean predicted = false;
+    private boolean translate = true;
+    private boolean drawingMode;
+    private boolean videoMode;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -75,11 +84,13 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         drawingMode = false;
+        videoMode = false;
 
         previewView = findViewById(R.id.previewView);
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         ImageView cameraShutter = findViewById(R.id.cameraShutter);
         ImageView drawMode = findViewById(R.id.drawMode);
+        ImageView liveMode = findViewById(R.id.liveMode);
         photoPreview = findViewById(R.id.photoPreview);
         ImageView switchLens = findViewById(R.id.switchLens);
         closePhotoPreview = findViewById(R.id.closePhotoPreview);
@@ -89,6 +100,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
         sensorMan = (SensorManager)getSystemService(SENSOR_SERVICE);
         accelerometer = sensorMan.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        sensorMan.unregisterListener(this, accelerometer);
 
         // create camera view
         showImagePreview();
@@ -119,6 +131,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             resetZoom.setVisibility(View.GONE);
             cameraShutter.setVisibility(View.GONE);
             drawMode.setVisibility(View.GONE);
+            liveMode.setVisibility(View.GONE);
 
             // stop camera view
             processCameraProvider.unbindAll();
@@ -153,6 +166,15 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             }
             else
             {
+                if (videoMode)
+                {
+                    videoMode = false;
+                    liveMode.setBackgroundResource(R.drawable.circle_background);
+                    photoPreview.setVisibility(View.GONE);
+                    accelThreshCount = 0;
+                    sensorMan.unregisterListener(this, accelerometer);
+                }
+
                 drawingMode = true;
                 drawMode.setBackgroundResource(R.drawable.pressed_background);
 
@@ -160,6 +182,31 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             }
 
             drawView.setDrawMode(drawingMode);
+        });
+
+        liveMode.setOnClickListener(v -> {
+            if (videoMode)
+            {
+                videoMode = false;
+                liveMode.setBackgroundResource(R.drawable.circle_background);
+                photoPreview.setVisibility(View.GONE);
+                accelThreshCount = 0;
+                sensorMan.unregisterListener(this, accelerometer);
+            }
+            else
+            {
+                if (drawingMode)
+                {
+                    drawingMode = false;
+                    drawMode.setBackgroundResource(R.drawable.circle_background);
+                    drawView.setVisibility(View.GONE);
+                    drawView.setDrawMode(drawingMode);
+                }
+                videoMode = true;
+                liveMode.setBackgroundResource(R.drawable.pressed_background);
+
+                sensorMan.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
+            }
         });
 
         resetZoom.setOnClickListener(v -> {
@@ -181,6 +228,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             switchLens.setVisibility(View.VISIBLE);
             cameraShutter.setVisibility(View.VISIBLE);
             drawMode.setVisibility(View.VISIBLE);
+            liveMode.setVisibility(View.VISIBLE);
             resetZoom.setVisibility(View.VISIBLE);
         });
 
@@ -248,27 +296,40 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
-            float[] mGravity = event.values.clone();
-            // Shake detection
-            float x = mGravity[0];
-            float y = mGravity[1];
-            float z = mGravity[2];
-            float mAccelLast = mAccelCurrent;
-            mAccelCurrent = (float)Math.sqrt(x*x + y*y + z*z);
-            float delta = mAccelCurrent - mAccelLast;
-            mAccel = mAccel * 0.9f + delta;
+        if (videoMode)
+        {
+            Log.d("VIDEO", "Detected sensor change");
+            if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+            {
+                float[] mGravity = event.values.clone();
+                // Shake detection
+                float x = mGravity[0];
+                float y = mGravity[1];
+                float z = mGravity[2];
+                float mAccelLast = mAccelCurrent;
+                mAccelCurrent = (float)Math.sqrt(x*x + y*y + z*z);
+                float delta = mAccelCurrent - mAccelLast;
+                mAccel = mAccel * 0.9f + delta;
 
-            if (Math.abs(mAccel) < 0.05)
-            {
-                accelThreshCount +=1;
-            }
-            else
-            {
-                accelThreshCount = 0;
+                if (Math.abs(mAccel) < 0.05)
+                {
+                    accelThreshCount +=1;
+                    if (accelThreshCount % 30 == 0)
+                    {
+                        predicted = false;
+                    }
+                }
+                else
+                {
+                    accelThreshCount = 0;
+                    predicted = false;
+                }
             }
         }
-
+        else
+        {
+            return;
+        }
     }
 
     @Override
@@ -295,6 +356,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
     @OptIn(markerClass = ExperimentalGetImage.class) private void showImagePreview()
     {
+
         cameraProviderFuture.addListener(() -> {
             ImageAnalysis imageAnalysis =
                     new ImageAnalysis.Builder()
@@ -304,7 +366,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this), imageProxy -> {
 
                 Log.d("acc", String.valueOf(mAccel));
-                if(accelThreshCount >= 5){
+                if (accelThreshCount >= 5 && !predicted) {
                     Image image = imageProxy.getImage();
                     assert image != null;
                     bitmapPhoto = previewView.getBitmap();
@@ -312,10 +374,11 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
                     photoPreview.setImageBitmap(bitmapPhoto);
                     photoPreview.setVisibility(View.VISIBLE);
                     detectMovingChars();
+                    predicted = true;
 
-                }
-                else
-                {
+                } else if (accelThreshCount >= 5) {
+                    assert true;
+                } else {
                     photoPreview.setVisibility(View.GONE);
                 }
                 // after done, release the ImageProxy object
@@ -414,6 +477,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
+            accelThreshCount = 0;
             float currentZoomRatio = Objects.requireNonNull(camera.getCameraInfo().getZoomState().getValue()).getZoomRatio();
             float delta = detector.getScaleFactor();
             camera.getCameraControl().setZoomRatio(currentZoomRatio * delta);
