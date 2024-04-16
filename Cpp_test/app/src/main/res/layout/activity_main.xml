@@ -61,30 +61,6 @@
         app:cornersSize="30dp">
     </com.android.example.cpp_test.DrawView>
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/cameraShutter"
-        android:layout_width="92dp"
-        android:layout_height="92dp"
-        android:layout_margin="32dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/ic_camera_shutter"
-        app:tint="@color/button" />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/switchLens"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_margin="32dp"
-        android:background="@drawable/circle_background"
-        android:padding="4dp"
-        app:layout_constraintBottom_toBottomOf="@id/cameraShutter"
-        app:layout_constraintEnd_toStartOf="@id/cameraShutter"
-        app:layout_constraintTop_toTopOf="@id/cameraShutter"
-        app:srcCompat="@drawable/ic_flip_camera_android"
-        app:tint="@color/button" />
-
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/resetZoom"
         android:layout_width="60dp"
@@ -97,6 +73,16 @@
         app:layout_constraintTop_toTopOf="@id/cameraShutter"
         android:text="@string/_1x"
         app:tint="@color/button" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/photoPreview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/drawMode"
@@ -113,16 +99,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/paintbrush"
         app:tint="@color/button" />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/photoPreview"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/closePhotoPreview"
@@ -149,6 +125,30 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@drawable/swap"
+        app:tint="@color/button" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/switchLens"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_margin="32dp"
+        android:background="@drawable/circle_background"
+        android:padding="4dp"
+        app:layout_constraintBottom_toBottomOf="@id/cameraShutter"
+        app:layout_constraintEnd_toStartOf="@id/cameraShutter"
+        app:layout_constraintTop_toTopOf="@id/cameraShutter"
+        app:srcCompat="@drawable/ic_flip_camera_android"
+        app:tint="@color/button" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/cameraShutter"
+        android:layout_width="92dp"
+        android:layout_height="92dp"
+        android:layout_margin="32dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/ic_camera_shutter"
         app:tint="@color/button" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
