@@ -100,7 +100,7 @@ cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
 }
 
 
-void displayOverlay(cv::Mat colImg, cv::Rect location){
+void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int option){
 
     std::string bugString;
 
@@ -138,6 +138,7 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
     {
         cv::Rect roiRect(location);
         cv::Mat roi = colImg(roiRect);
+        cv::Mat replaceroi = replaceImg(roiRect);
         // binarise image
         cv::Mat binRoi = binariseBox(colImg, roiRect);
 
@@ -232,7 +233,23 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
             cv::resize(decodeColor, overlayImg, roi.size());
             decodeColor.release();
 
-            addWeighted(overlayImg, 1, roi, 0, 0, roi);
+            cv::Mat alphaMask(roi.rows, roi.cols, CV_8UC1, cv::Scalar(255));
+
+            if (option == 1)
+            {
+                cv::cvtColor(overlayImg, overlayImg, cv::COLOR_RGB2RGBA);
+                cv::cvtColor(roi, roi, cv::COLOR_BGR2RGBA);
+
+                std::vector<cv::Mat>channels(4);
+                cv::split(overlayImg, channels);
+
+                channels[3] = alphaMask;
+
+                cv::merge(channels, overlayImg);
+            }
+
+
+            addWeighted(overlayImg, 1, roi, 0, 0, replaceroi);
             overlayImg.release();
         }
     }
@@ -342,7 +359,7 @@ cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, in
         //rectangle(colImg, finalBoxes[i].tl(), finalBoxes[i].br(), cv::Scalar(0, 0, 255), 2);
 
         // add correct overlay to colImg for this bounding box
-        displayOverlay(colImg, finalBoxes[i]);
+        displayOverlay(colImg, finalBoxes[i], colImg, 0);
     }
 
     return colImg;
@@ -447,7 +464,7 @@ void nms(std::vector<cv::Rect>* boxes, std::vector<float>* scores, std::vector<c
     sortParallelVector(boxes, scores);
 
     std::vector<cv::Rect>& boxes_ref = *boxes;
-    std::vector<float>& score_ref = *scores;
+    //std::vector<float>& score_ref = *scores;
 
     std::vector<bool> active;
 
@@ -510,7 +527,7 @@ void loadDetectionModel()
     detmodelInitialisedFlag = true;
 }
 
-cv::Mat Detection(cv::Mat src, cv::Mat orig) {
+cv::Mat Detection(cv::Mat src, cv::Mat orig, int option) {
     auto beg = std::chrono::high_resolution_clock::now();
 
     std::string bugString;
@@ -619,20 +636,36 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
     __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "yolo dectection %f", duration.count()/1000.0);
 
     beg = std::chrono::high_resolution_clock::now();
+
+    cv::Mat overlay(orig.rows, orig.cols, CV_8UC4, cv::Scalar(0,0,0,0));
     for (std::size_t i = 0; i != selected_boxes->size(); i++)
     {
         //cv::rectangle(src, (*selected_boxes)[i], cv::Scalar(255, 0, 0), 1);
-        displayOverlay(orig, (*selected_boxes)[i]);
+        if (option == 1)
+        {
+            displayOverlay(orig, (*selected_boxes)[i], overlay, option);
+        }
+        else
+        {
+            displayOverlay(orig, (*selected_boxes)[i], orig, option);
+        }
+
     }
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
     __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "translation inference %f with %d boxes", duration.count()/1000.0, (int) selected_boxes->size());
 
-    return orig;
-
+    if (option == 1)
+    {
+        return overlay;
+    }
+    else
+    {
+        return orig;
+    }
 }
 
-cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg) {
+cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg, int option) {
     auto beg = std::chrono::high_resolution_clock::now();
     mgr = manager;
 
@@ -669,10 +702,18 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg) {
     graySmoothed.release();
 
     cv::Mat detectionImg;
-    detectionImg = Detection(grayBGR, img);
+    detectionImg = Detection(grayBGR, img, option);
 
     cv::Mat detectionFinal;
-    cvtColor(detectionImg, detectionFinal, cv::COLOR_BGR2RGBA);
+    if (option == 1)
+    {
+        detectionFinal = detectionImg.clone();
+    }
+    else
+    {
+        cvtColor(detectionImg, detectionFinal, cv::COLOR_BGR2RGBA);
+    }
+
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
     __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "total time %f", duration.count()/1000.0);
@@ -688,7 +729,7 @@ cv::Mat captureBoxImage(AAssetManager* manager, cv::Mat srcImg, int x, int y, in
     cvtColor(srcImg, img, cv::COLOR_RGBA2BGR);
 
     cv::Mat translateBox;
-    displayOverlay(img, box);
+    displayOverlay(img, box, img, 0);
 
     cv::Mat translateFinal;
     cvtColor(img, translateFinal, cv::COLOR_BGR2RGBA);

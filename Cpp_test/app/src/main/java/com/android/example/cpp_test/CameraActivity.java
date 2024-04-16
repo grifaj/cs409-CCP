@@ -259,9 +259,12 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             float delta = mAccelCurrent - mAccelLast;
             mAccel = mAccel * 0.9f + delta;
 
-            if (Math.abs(mAccel) < 0.05){
+            if (Math.abs(mAccel) < 0.05)
+            {
                 accelThreshCount +=1;
-            }else {
+            }
+            else
+            {
                 accelThreshCount = 0;
             }
         }
@@ -269,25 +272,29 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     }
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
+    public void onAccuracyChanged(Sensor sensor, int accuracy)
+    {
+        return;
     }
 
     @Override
-    public void onResume() {
+    public void onResume()
+    {
         super.onResume();
         sensorMan.registerListener(this, accelerometer,
                 SensorManager.SENSOR_DELAY_UI);
     }
 
     @Override
-    protected void onPause() {
+    protected void onPause()
+    {
         super.onPause();
         sensorMan.unregisterListener(this);
     }
 
 
-    @OptIn(markerClass = ExperimentalGetImage.class) private void showImagePreview() {
+    @OptIn(markerClass = ExperimentalGetImage.class) private void showImagePreview()
+    {
         cameraProviderFuture.addListener(() -> {
             ImageAnalysis imageAnalysis =
                     new ImageAnalysis.Builder()
@@ -304,14 +311,13 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
                     photoPreview.setImageBitmap(bitmapPhoto);
                     photoPreview.setVisibility(View.VISIBLE);
-                    detectChars();
+                    detectMovingChars();
 
                 }
-                else{
+                else
+                {
                     photoPreview.setVisibility(View.GONE);
                 }
-
-
                 // after done, release the ImageProxy object
                 imageProxy.close();
             });
@@ -376,7 +382,16 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         cvMat = new Mat();
         // convert to opencv Matrix format
         Utils.bitmapToMat(bitmapPhoto, cvMat);
-        callBoundingBoxes(cvMat.getNativeObjAddr(), getAssets());
+        callBoundingBoxes(cvMat.getNativeObjAddr(), getAssets(), 0);
+        //convert back
+        Utils.matToBitmap(cvMat,bitmapPhoto);
+    }
+
+    private void detectMovingChars() {
+        cvMat = new Mat();
+        // convert to opencv Matrix format
+        Utils.bitmapToMat(bitmapPhoto, cvMat);
+        callBoundingBoxes(cvMat.getNativeObjAddr(), getAssets(), 1);
         //convert back
         Utils.matToBitmap(cvMat,bitmapPhoto);
     }
@@ -408,7 +423,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     }
 
     @FastNative
-    public native void callBoundingBoxes(long image, AssetManager assetManager);
+    public native void callBoundingBoxes(long image, AssetManager assetManager, int opt);
     @FastNative
     public native void callBoundingBoxes2(long image, int x, int y, int w, int h, AssetManager assetManager);
 }
