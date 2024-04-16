@@ -2,39 +2,39 @@ package com.android.example.cpp_test;
 
 import android.animation.Animator;
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Point;
-import android.graphics.drawable.BitmapDrawable;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.media.Image;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.AttributeSet;
+import android.view.Display;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.OptIn;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
-import android.content.Context;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.DisplayOrientedMeteringPointFactory;
+import androidx.camera.core.ExperimentalGetImage;
 import androidx.camera.core.FocusMeteringAction;
-import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
-import android.content.res.AssetManager;
-import android.view.Display;
-import android.view.WindowManager;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -42,12 +42,11 @@ import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
 import java.util.Objects;
-import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 import dalvik.annotation.optimization.FastNative;
 
-public class CameraActivity extends AppCompatActivity {
+public class CameraActivity extends AppCompatActivity implements SensorEventListener {
     static {
         System.loadLibrary("cpp_test");
     }
@@ -64,6 +63,11 @@ public class CameraActivity extends AppCompatActivity {
     private ProcessCameraProvider processCameraProvider;
     private boolean translate = true;
     protected float zoom;
+    private SensorManager sensorMan;
+    private Sensor accelerometer;
+    private float mAccel;
+    private float mAccelCurrent;
+    private int accelThreshCount;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -82,6 +86,9 @@ public class CameraActivity extends AppCompatActivity {
         resetZoom = findViewById(R.id.resetZoom);
         swapImage = findViewById(R.id.swapImage);
         drawView = findViewById(R.id.drawView);
+
+        sensorMan = (SensorManager)getSystemService(SENSOR_SERVICE);
+        accelerometer = sensorMan.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         // create camera view
         showImagePreview();
@@ -108,7 +115,10 @@ public class CameraActivity extends AppCompatActivity {
             photoPreview.setVisibility(View.VISIBLE);
 
             // remove other buttons
+            switchLens.setVisibility(View.GONE);
             resetZoom.setVisibility(View.GONE);
+            cameraShutter.setVisibility(View.GONE);
+            drawMode.setVisibility(View.GONE);
 
             // stop camera view
             processCameraProvider.unbindAll();
@@ -168,6 +178,9 @@ public class CameraActivity extends AppCompatActivity {
             swapImage.setVisibility(View.GONE);
 
             // add other buttons
+            switchLens.setVisibility(View.VISIBLE);
+            cameraShutter.setVisibility(View.VISIBLE);
+            drawMode.setVisibility(View.VISIBLE);
             resetZoom.setVisibility(View.VISIBLE);
         });
 
@@ -233,12 +246,76 @@ public class CameraActivity extends AppCompatActivity {
 
     }
 
-    private void showImagePreview() {
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
+            float[] mGravity = event.values.clone();
+            // Shake detection
+            float x = mGravity[0];
+            float y = mGravity[1];
+            float z = mGravity[2];
+            float mAccelLast = mAccelCurrent;
+            mAccelCurrent = (float)Math.sqrt(x*x + y*y + z*z);
+            float delta = mAccelCurrent - mAccelLast;
+            mAccel = mAccel * 0.9f + delta;
+
+            if (Math.abs(mAccel) < 0.05){
+                accelThreshCount +=1;
+            }else {
+                accelThreshCount = 0;
+            }
+        }
+
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        sensorMan.registerListener(this, accelerometer,
+                SensorManager.SENSOR_DELAY_UI);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        sensorMan.unregisterListener(this);
+    }
+
+
+    @OptIn(markerClass = ExperimentalGetImage.class) private void showImagePreview() {
         cameraProviderFuture.addListener(() -> {
-            ImageCapture imageCapture = new ImageCapture.Builder()
-                    .setTargetRotation(previewView.getDisplay().getRotation())
-                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                    .build();
+            ImageAnalysis imageAnalysis =
+                    new ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build();
+
+            imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this), imageProxy -> {
+
+                Log.d("acc", String.valueOf(mAccel));
+                if(accelThreshCount >= 5){
+                    Image image = imageProxy.getImage();
+                    assert image != null;
+                    bitmapPhoto = previewView.getBitmap();
+
+                    photoPreview.setImageBitmap(bitmapPhoto);
+                    photoPreview.setVisibility(View.VISIBLE);
+                    detectChars();
+
+                }
+                else{
+                    photoPreview.setVisibility(View.GONE);
+                }
+
+
+                // after done, release the ImageProxy object
+                imageProxy.close();
+            });
+
 
             try {
                 processCameraProvider = cameraProviderFuture.get();
@@ -247,7 +324,7 @@ public class CameraActivity extends AppCompatActivity {
                 processCameraProvider.unbindAll();
 
                 // lensFacing is used here
-                camera = processCameraProvider.bindToLifecycle(this, lensFacing, imageCapture, preview);
+                camera = processCameraProvider.bindToLifecycle(this, lensFacing, imageAnalysis, preview);
                 camera.getCameraControl().setZoomRatio(zoom);
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
@@ -284,21 +361,17 @@ public class CameraActivity extends AppCompatActivity {
                     @Override
                     public void onAnimationStart(@NonNull Animator animation)
                     {
-                        return;
                     }
                     @Override
                     public void onAnimationCancel(@NonNull Animator animation)
                     {
-                        return;
                     }
                     @Override
                     public void onAnimationRepeat(@NonNull Animator animation)
                     {
-                        return;
                     }
                 });
     }
-
     private void detectChars() {
         cvMat = new Mat();
         // convert to opencv Matrix format
