@@ -185,10 +185,10 @@ public class CameraActivity extends AppCompatActivity {
         previewView.setOnTouchListener((v, event) -> {
             if (drawingMode)
             {
-                Log.d("TOUCH", "Passing to next listener");
+//                Log.d("TOUCH", "Passing to next listener");
                 return false;
             }
-            Log.d("TOUCH", "Screen touched");
+//            Log.d("TOUCH", "Screen touched");
             scaleGestureDetector.onTouchEvent(event);
             if(event.getAction() == MotionEvent.ACTION_DOWN)
             {
@@ -227,7 +227,7 @@ public class CameraActivity extends AppCompatActivity {
         });
 
         drawView.setOnTouchListener((v, event) -> {
-            Log.d("TOUCH", "Passed to me");
+//            Log.d("TOUCH", "Passed to me");
             return drawView.onTouchEvent(event);
         });
 

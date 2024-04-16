@@ -18,40 +18,6 @@ bool modelInitialisedFlag = false;
 bool detmodelInitialisedFlag = false;
 AAssetManager* mgr;
 
-cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
-{
-    cv::Mat grayImg;
-    cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
-
-
-    cv::Mat boxImg(grayImg, inBox);
-    cv::Mat threshBox;
-
-    cv::threshold(boxImg, threshBox, 0, 255, cv::THRESH_OTSU);
-    boxImg.release();
-    grayImg.release();
-
-    int rows = threshBox.rows;
-    int cols = threshBox.cols;
-
-    int box_tl = (int) threshBox.at<uchar>(0, 0);
-    int box_bl = (int) threshBox.at<uchar>(rows - 1, 0);
-    int box_tr = (int) threshBox.at<uchar>(0, cols-1);
-    int box_br = (int) threshBox.at<uchar>(rows - 1, cols - 1);
-
-    int sum_corners = box_tl + box_bl + box_tr + box_br;
-
-    if (sum_corners <= 255)
-    {
-        cv::bitwise_not(threshBox, threshBox);
-    }
-
-    cv::Mat threshBGR;
-    cvtColor(threshBox, threshBGR, cv::COLOR_GRAY2BGR);
-
-    return threshBGR;
-}
-
 void loadTranslationModel() {
     // Load model
     int ret = translationModel.load_param(mgr,"mobilenet_v3_large_3-sim-opt.param");
@@ -91,6 +57,46 @@ void preloadModels(AAssetManager* manager) {
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
     __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "load models %f", duration.count()/1000.0);
+}
+
+cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
+{
+    cv::Mat grayImg;
+    cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
+
+    cv::Mat boxImg(grayImg, inBox);
+
+    //smooth the box - possibly remove?
+    cv::Mat boxSmoothed;
+    cv::medianBlur(boxImg, boxSmoothed, 5);
+
+    cv::Mat threshBox;
+
+    cv::threshold(boxSmoothed, threshBox, 0, 255, cv::THRESH_OTSU);
+    boxImg.release();
+    boxSmoothed.release();
+    grayImg.release();
+
+
+    int rows = threshBox.rows;
+    int cols = threshBox.cols;
+
+    int box_tl = (int) threshBox.at<uchar>(0, 0);
+    int box_bl = (int) threshBox.at<uchar>(rows - 1, 0);
+    int box_tr = (int) threshBox.at<uchar>(0, cols-1);
+    int box_br = (int) threshBox.at<uchar>(rows - 1, cols - 1);
+
+    int sum_corners = box_tl + box_bl + box_tr + box_br;
+
+    if (sum_corners <= 255)
+    {
+        cv::bitwise_not(threshBox, threshBox);
+    }
+
+    cv::Mat threshBGR;
+    cvtColor(threshBox, threshBGR, cv::COLOR_GRAY2BGR);
+
+    return threshBGR;
 }
 
 
@@ -191,17 +197,16 @@ void displayOverlay(cv::Mat colImg, cv::Rect location){
                 argMax = std::to_string(j+1);
             }
         }
+        bugString = "Max class: " + argMax;
+        __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
+
+        bugString = "Max confidence: " + std::to_string(max);
+        __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
 
         // get file name
         float confThreshold = 0.7;
         if (max >= confThreshold)
         {
-
-            bugString = "Max class: " + argMax;
-            __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
-
-            bugString = "Max confidence: " + std::to_string(max);
-            __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
 
             std::string filename = "overlays/";
             filename.append(argMax);
@@ -621,7 +626,7 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig) {
     }
     end = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
-    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "resnet inference %f with %d boxes", duration.count()/1000.0, (int) selected_boxes->size());
+    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "translation inference %f with %d boxes", duration.count()/1000.0, (int) selected_boxes->size());
 
     return orig;
 
