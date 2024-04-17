@@ -31,7 +31,7 @@ class Config_2:
     # model name - select architecture to train
     MODEL_NAME = model_types[1]
     # path the python logger will store files to
-    LOG_PATH = "./job_logs/run/mobilenet_run.log"
+    LOG_PATH = f"./job_logs/run/{MODEL_NAME}_run.log"
     # path to read file names from (needs to be in a train.csv format)
     DATA_PATH = "./trainData.csv"
     # path which pretrained torch weights are stored to
