@@ -36,7 +36,7 @@ class Config_2:
     TORCH_MODEL_CACHE = ""
     
     # batch size
-    BATCH_SIZE = 18
+    BATCH_SIZE = 24
     # shuffle order of data in torch data loader
     SHUFFLE_DATA = True 
     # proportion of data for testing
@@ -54,11 +54,11 @@ class Config_2:
     ADAM_BETA = (0.5, 0.99)
     
     # total training epochs
-    EPOCHS = 100
+    EPOCHS = 70
     # path to save checkpoints
     CHECKPOINT_PATH = f"/dcs/large/seal-script-project-checkpoints/{MODEL_NAME}{'_pretrained' if PRETRAINED else ''}/"
     # save checkpoint every n epochs
-    SAVE_EVERY_N = 20
+    SAVE_EVERY_N = 10
     # load model checkpoint path -- leave blank to not load
     LOAD_CHECKPOINT_PATH = ""
 

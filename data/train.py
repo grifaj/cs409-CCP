@@ -63,7 +63,7 @@ class CharactersDataSet(Dataset):
         image = self.transform(image)
 
     return image, label
-  
+
 
 def init_dataset(model_type):
     '''
