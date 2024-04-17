@@ -214,7 +214,14 @@ def train_model(model:SiameseNetwork, dataloaders, datasets, optimisers, criteri
                 
             running_loss = 0.0
             
-            for anchor, pos, neg in dataloaders[phase]:
+            # make it so that iterator only runs tqdm when not on gecko or falcon or kudu
+            machine_name = os.popen("hostname").read()
+            if "kudu" in machine_name or "gecko" in machine_name or "falcon" in machine_name:
+                iterator = dataloaders[phase]
+            else:
+                iterator = tqdm(dataloaders[phase])
+            
+            for anchor, pos, neg in iterator:
             # logging.warn("!!! Using TQDM !!!")
             # for anchor, pos, neg in tqdm(dataloaders[phase]):
                 anchor = anchor.to(device)
