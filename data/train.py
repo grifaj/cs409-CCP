@@ -10,6 +10,7 @@ from tqdm import tqdm
 from config import Config_2 as C
 import logging
 from datetime import datetime
+import sys
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
@@ -124,6 +125,12 @@ def init_model(num_classes, model_type, pretrained=True, log=True): #, use_cpu=F
             model = models.mobilenet_v3_large(weights = weights)
         else:
             model = models.mobilenet_v3_large()
+    elif model_type == 'vgg_19':
+        if pretrained:
+            weights = models.VGG19_Weights.DEFAULT
+            model = models.vgg19(weights = weights)
+        else:
+            model = models.vgg19()
 
     if pretrained:
         for param in model.parameters():
@@ -149,9 +156,16 @@ def init_model(num_classes, model_type, pretrained=True, log=True): #, use_cpu=F
             nn.Linear(in_features=1280, out_features=num_classes, bias=True),
             nn.Softmax(dim=1)
         ).to(device)
+    elif model_type == 'vgg_19':
+        model.classifier[6] = nn.Linear(4096, num_classes, True).to(device)
+        model.classifier = nn.Sequential(
+            model.classifier,
+            nn.Softmax(dim=1)
+        )
 
     # Use NLLLoss so that softmax can be applied in final layer of model, softmax + NLLLoss is equivalent to CrossEntropyLoss
     criterion = nn.NLLLoss()
+    
     optimisers = [
         optim.Adam(model.parameters(), lr=C.LEARNING_RATE, betas=C.ADAM_BETA),
     ]
@@ -217,6 +231,13 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch
                 labels = labels.to(device)
 
                 outputs = model(inputs)
+
+                # Check for Nan outputs - save model before updating if exist
+                if torch.isnan(output).any():
+                    save_model(model, optimisers, epoch)
+                    logging.info(f"Nan outputs detected. Saving and stopping.")
+                    sys.exit()
+
                 loss = criterion(torch.log(outputs), labels)
 
                 if phase == 'train':
@@ -227,13 +248,6 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch
                 _, preds = torch.max(outputs, 1)
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
-                print(labels)
-                print()
-                print(preds)
-                for i in range(len(preds)):
-                    print(f"Actual: {labels.data[i]}. Predicted: {preds[i]}")
-                print()
-                print()
 
             epochLoss = running_loss / datasets[phase].__len__()
             epochAccuracy = running_corrects.double() / datasets[phase].__len__()
@@ -257,7 +271,7 @@ def main():
     logging.info("Done")
     epoch=0
     logging.info(f"Loading {model_type}")
-    model, criterion, optimisers = init_model(num_classes, model_type, pretrained=pretrained, log=False)#, use_cpu, pretrained)
+    model, criterion, optimisers = init_model(num_classes, model_type, pretrained=pretrained, log=True)#, use_cpu, pretrained)
     if C.LOAD_CHECKPOINT_PATH != "":
         model, epoch = load_model(model, optimisers, C.LOAD_CHECKPOINT_PATH)  
     logging.info("Done")
