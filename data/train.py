@@ -233,7 +233,7 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch
                 outputs = model(inputs)
 
                 # Check for Nan outputs - save model before updating if exist
-                if torch.isnan(output).any():
+                if torch.isnan(outputs).any():
                     save_model(model, optimisers, epoch)
                     logging.info(f"Nan outputs detected. Saving and stopping.")
                     sys.exit()

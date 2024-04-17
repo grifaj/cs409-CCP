@@ -30,8 +30,6 @@ class Config_2:
 
     # model name - select architecture to train
     MODEL_NAME = model_types[1]
-    # path the python logger will store files to
-    LOG_PATH = f"./job_logs/run/{MODEL_NAME}_run.log"
     # path to read file names from (needs to be in a train.csv format)
     DATA_PATH = "./trainData.csv"
     # path which pretrained torch weights are stored to
@@ -46,7 +44,9 @@ class Config_2:
     # size of square images
     IMAGE_SIZE = 128
     # use the pretrained weights for chosen model
-    PRETRAINED = False
+    PRETRAINED = True
+    # path the python logger will store files to
+    LOG_PATH = f"./job_logs/run/{MODEL_NAME}{'_pretrained' if PRETRAINED else ''}_run.log"
     
     # learning rate
     LEARNING_RATE = 0.00001
