@@ -11,17 +11,18 @@ from PIL import Image
 import random
 
 def test_model():
-    model_types = ['resnet_50', 'mobilenet_v3_large']
+    model_type = C.MODEL_NAME
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_type = model_types[1]
+
     # # Initialise model
-    model, criterion, optimiser = train.init_model(1075, model_type, pretrained=False, log=False)
+    model, criterion, optimiser = train.init_model(1000, model_type, pretrained=C.PRETRAINED, log=False)
 
     # # Load saved model parameters
     model, _ = train.load_model(
         model, 
         optimiser, 
-        "/dcs/large/seal-script-project-checkpoints/mobilenet_v3_large/2024-04-13/CK-59.pt"
+        "/dcs/large/seal-script-project-checkpoints/mobilenet_v3_large/2024-04-17/CK-99.pt"
+        # "/dcs/large/seal-script-project-checkpoints/mobilenet_v3_large/2024-04-17/CK-19.pt"
         )
         
     model.to(device)
@@ -34,6 +35,9 @@ def test_model():
         ## Retrieve Mobilenet V3 Large model weights
         weights = models.MobileNet_V3_Large_Weights.DEFAULT
 
+    elif model_type == 'vgg_19':
+        weights = models.VGG19_Weights.DEFAULT
+
     transformation = weights.transforms()
 
     # Get PyTorch predictions
@@ -41,7 +45,6 @@ def test_model():
     numRands = 10
     dataset = pd.read_csv(csv, names=['image', 'label'], index_col=False)
     samples = dataset.sample(n=numRands, ignore_index=True) # Get sample of dataset with indexing reset to 0,1,...,n-1
-    samples = dataset[dataset['label'] == 417]
     print(samples)
     # print(samples)
 
@@ -69,11 +72,13 @@ def test_model():
         label = label.to(device)
 
         output = model(input)
-        # print(output.shape)
+        print(output)
+
+        print(f"Nans: {torch.isnan(output).any()}")
 
         # Get softmax output from model
-        soft = nn.Softmax(dim=1)
-        output = soft(output)
+        # soft = nn.Softmax(dim=1)
+        # output = soft(output)
         
         # if i == 0:
         print(f'[INFO] Testing image: {image}')

@@ -17,18 +17,31 @@ from tqdm import tqdm
 import scipy
 from tqdm import tqdm
 from character_translation_load import DatasetLoad
+import logging
+
+log = './distort_log.log'
+
+formatter = logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s")
+handler = logging.FileHandler(log)
+handler.setFormatter(formatter)
+# handler2 = logging.StreamHandler(sys.stdout)
+# handler2.setFormatter(formatter)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
 
 
 # Directory where raw scraped images are stored
-DATA_DIR = '/dcs/project/seal-script-project-data/seal-script-images-raw-copy'
+DATA_DIR = '/dcs/project/seal-script-project-data/seal-script-new/scraped'
+
+csvFile = './rawImages.csv'
 
 # Directory to save newly distorted images
-SAVE_DIR = '/dcs/project/seal-script-project-data/seal-script-images-clean/'
+SAVE_DIR = '/dcs/project/seal-script-project-data/seal-script-new/distorted'
 IMG_FILETYPE = '.png'
-test = True
 
 # The character index to edit up to
-edit_index = 1075
+edit_index = 1000
 
 # The number of variants to obtain for each character
 DESIRED_VARIANTS = 100
@@ -76,7 +89,7 @@ def binarise_image(im, thresh):
 
 
 def extract_character(im):
-    binary_im = binarise_image(im, 200) # Input images should be black & white anyway, so 128 is arbitrary
+    binary_im = binarise_image(im, 200) # Input images should be black & white anyway, so 200 is arbitrary
 
     # threshold at 200
     threshed = np.zeros(im.shape, 'int')
@@ -150,7 +163,7 @@ def add_gaussian_noise(img, std, rot):
 
 
 def add_gaussian_blur(img, std, rot):
-    std = int(std//10)
+    std = int(std//15)
     gauss_blurred = ndimage.gaussian_filter(img, std)
     
     return gauss_blurred
@@ -211,10 +224,10 @@ def add_effects(im):
     effects = {
         1: rotate_char,
         2: remove_block,
-        3: flip_image,
-        4: add_gaussian_blur,
-        5: add_gaussian_noise,
-        6: squish_image
+        3: add_gaussian_blur,
+        4: add_gaussian_noise,
+        5: squish_image
+        # 6: flip_image
     }
     
     effect_transform = [
@@ -265,53 +278,62 @@ def get_data_csv_override(edit_index):
 
 
 def main(start_index=1):
-    if os.path.exists(os.path.join(DATA_DIR, 'trainData.csv')):
-        df = pd.read_csv(os.path.join(DATA_DIR,'trainData.csv'), sep=",", names = ["img", "label"])
-        labels = np.unique(np.asarray(df["label"], dtype=int))
-        name = df[df["label"] == 1]["img"][0][:]
-        # Loop over characters
-        print(labels)
-        for i in labels[labels >= start_index]:
-            print(i)
-            variant_num = 1
+    currImage = None
+    try:
+        if os.path.exists(csvFile):
+            df = pd.read_csv(csvFile, sep=",", names = ["img", "label"])
+            labels = np.unique(np.asarray(df["label"], dtype=int))
+            name = df[df["label"] == 1]["img"][0][:]
+            # Loop over characters
+            print(labels)
+            for i in labels[labels >= start_index]:
+                print(i)
+                variant_num = 1
 
-            # Number of images currently in folder for character i
-            # Make character folder if not exists
-            directory = SAVE_DIR + '/' + str(i) + '/'
-            if not os.path.exists(directory):
-                os.makedirs(directory)
+                # Number of images currently in folder for character i
+                # Make character folder if not exists
+                directory = SAVE_DIR + '/' + str(i) + '/'
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
 
-            # Get number of existing variant images for character
-            num_variants = len([name for name in os.listdir(directory) if (os.path.isfile(os.path.join(directory, name)) and IMG_FILETYPE in name)])
+                # Get number of existing variant images for character
+                num_variants = len([name for name in os.listdir(directory) if (os.path.isfile(os.path.join(directory, name)) and IMG_FILETYPE in name)])
 
-            # Calculate number of variant images to make for each image in folder
-            div = len(df[df["label"] == i])
-            num = DESIRED_VARIANTS - num_variants
-            if num <= 0:
-                variants_to_make = [0 for _ in range(num_variants)]
-            else:
-                variants_to_make = ([num // div + (1 if x < num % div else 0)  for x in range (div)])
+                # Calculate number of variant images to make for each image in folder
+                div = len(df[df["label"] == i])
+                num = DESIRED_VARIANTS - num_variants
+                if num <= 0:
+                    variants_to_make = [0 for _ in range(num_variants)]
+                else:
+                    variants_to_make = ([num // div + (1 if x < num % div else 0)  for x in range (div)])
 
-            # Loop over images in character folder
-            for j in range(div):
-                # Make required number of variants for each image
-                for k in range(variants_to_make[j]):
-                    # print(j)
-                    # Make filename for new image
-                    variant_filename = SAVE_DIR + '/' + str(i) + '/' + str(i) + '_' + str(num_variants+variant_num) + IMG_FILETYPE
+                # Loop over images in character folder
+                for j in range(div):
+                    # Make required number of variants for each image
 
-                    # Make new variant image
-                    make_variant(df[df["label"] == i].iloc[j]["img"], variant_filename)
+                    currImage = df[df["label"] == i].iloc[j]["img"]
+                    logging.info(f'Making variants for {currImage}')
+                    for k in range(variants_to_make[j]):
+                        # print(j)
+                        # Make filename for new image
+                        variant_filename = SAVE_DIR + '/' + str(i) + '/' + str(i) + '_' + str(num_variants+variant_num) + IMG_FILETYPE
 
-                    # Increment to get next variant number for next new image filename
-                    variant_num += 1
-        print('[INFO] Image augmentation process finished.')
-    else:
-        print('[INFO] Image path csv does not exist, create in data directory.')
+                        # Make new variant image
+                        make_variant(df[df["label"] == i].iloc[j]["img"], variant_filename)
+
+                        # Increment to get next variant number for next new image filename
+                        variant_num += 1
+
+            print('[INFO] Image augmentation process finished.') 
+        else:
+            print('[INFO] Image path csv does not exist, create in data directory.')              
+    except Exception as e:
+        logging.critical(f'Failed to distort image {currImage}. Error: {e}')
+    
         
         
 if __name__ == "__main__":
     start_index = 0
-    get_data_csv_override(1075)
+    # get_data_csv_override(1075)
     main(start_index)
         

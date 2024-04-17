@@ -26,12 +26,12 @@ class Config:
     LOAD_CHECKPOINT_PATH = ""
 
 class Config_2:
-    model_types = ['resnet_50', 'mobilenet_v3_large']
+    model_types = ['resnet_50', 'mobilenet_v3_large', 'vgg_19']
 
     # model name - select architecture to train
     MODEL_NAME = model_types[1]
     # path the python logger will store files to
-    LOG_PATH = "./run.log"
+    LOG_PATH = "./job_logs/run/mobilenet_run.log"
     # path to read file names from (needs to be in a train.csv format)
     DATA_PATH = "./trainData.csv"
     # path which pretrained torch weights are stored to
@@ -45,11 +45,11 @@ class Config_2:
     TEST_SIZE = 0.3
     # size of square images
     IMAGE_SIZE = 128
-    #
-    PRETRAINED = True
+    # use the pretrained weights for chosen model
+    PRETRAINED = False
     
     # learning rate
-    LEARNING_RATE = 0.0001
+    LEARNING_RATE = 0.00001
     # beta_1 and beta_2 momentum parameters for Adam
     ADAM_BETA = (0.5, 0.99)
     
@@ -60,7 +60,7 @@ class Config_2:
     # save checkpoint every n epochs
     SAVE_EVERY_N = 20
     # load model checkpoint path -- leave blank to not load
-    LOAD_CHECKPOINT_PATH = "/dcs/large/seal-script-project-checkpoints/mobilenet_v3_large/2024-04-13/CK-59.pt"
+    LOAD_CHECKPOINT_PATH = ""
 
     # path of checkpoint to convert
     CONVERT_CHECKPOINT_PATH = "/dcs/large/seal-script-project-checkpoints/mobilenet_v3_large/2024-04-13/CK-59.pt"
