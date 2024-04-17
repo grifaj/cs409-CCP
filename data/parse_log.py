@@ -4,17 +4,24 @@ import re
 import argparse
 import numpy as np
 
-LOG_PATH = 'run.log' # Path to log containing all job logs (master log file)
-OUTPUT_DIR = '/dcs/project/seal-script-project-data/job_logs/logs' # Location to store job logs
-PLOT_DIR = '/dcs/project/seal-script-project-data/job_logs/plots' # Location to store convergence plots
+MASTER_LOG_PATH = './job_logs/run/mobilenet_v3_large_pretrained_run.log' # Path to log containing all job logs (master log file)
+OUTPUT_DIR = './job_logs/logs/mobilenet_pretrained' # Location to store job logs
+PLOT_DIR = './job_logs/plots/mobilenet_pretrained' # Location to store convergence plots
 
-def plot_convergence(log):
+JOB_LOG_PATH = './job_logs/logs/mobilenet_pretrained/[2024-04-17 13:54:28].log' # Path to job log to plot graphs for
 
+MODEL_NAME = 'MobileNetV3-Large'
+PRETRAINED = True
+
+def plot_convergence():
+    # Create path to store plots
+    if not os.path.exists(PLOT_DIR):
+        os.makedirs(PLOT_DIR)
 
     train = {'loss': [], 'acc': []}
     validation = {'loss': [], 'acc': []}
     i = 0
-    with open(log, 'r') as f:
+    with open(JOB_LOG_PATH, 'r', newline='') as f:
         while True:
             line = f.readline()
             if i == 0: # Create filename for plots 
@@ -22,6 +29,8 @@ def plot_convergence(log):
             if re.search('Epoch \d+/\d+', line) is not None: # There is a match
                 loss = re.search('Loss \d+.\d{1,5}', line)
                 acc = re.search('Accuracy \d+.\d{1,5}', line)
+                if loss is None or acc is None:
+                    break
                 loss = loss.group().split(" ")[1]
                 acc = acc.group().split(" ")[1]
                 if 'train' in line:
@@ -46,7 +55,7 @@ def plot_convergence(log):
     # Plot loss and accuracy curves with train and validation
     plt.plot(np.arange(1,len(loss_t)+1), loss_t, linewidth=1, c='red', label='Train')
     plt.plot(np.arange(1,len(loss_v)+1), loss_v, linewidth=1, c='blue', label='Validation')
-    plt.title('Model loss')
+    plt.title(f'{"Pretrained " if PRETRAINED else ""}{MODEL_NAME} loss')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
@@ -56,7 +65,7 @@ def plot_convergence(log):
 
     plt.plot(np.arange(1,len(acc_t)+1), acc_t, linewidth=1, c='red', label='Train')
     plt.plot(np.arange(1,len(acc_v)+1), acc_v, linewidth=1, c='blue', label='Validation')
-    plt.title('Model accuracy')
+    plt.title(f'{"Pretrained " if PRETRAINED else ""}{MODEL_NAME} accuracy')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.legend()
@@ -65,7 +74,11 @@ def plot_convergence(log):
     print(f'[INFO] Plots saved to {PLOT_DIR}')
 
 def split_logs():
-    with open(LOG_PATH, 'r') as f:
+    # Create path to store job logs
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+
+    with open(MASTER_LOG_PATH, 'r') as f:
         while True:
             line = f.readline()
             
@@ -93,15 +106,10 @@ def split_logs():
 
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--split', action='store_true') # Include if master log file should be split into separate job log files
-    parser.add_argument('--plot', action='store_true') # include if job log file should be plotted
-    parser.add_argument('--job_log', type=str) # File of job log to plot (should be in OUTPUT_DIR)
-    
-    args = parser.parse_args()
-
-    if args.split:
+    # If no individual job log is set, split the master log into separate job logs
+    if JOB_LOG_PATH == "":
         split_logs() # Split log file into different job logs
 
-    if args.plot:
-        plot_convergence(args.job_log) # Create convergence plots
+    # If an individual job log is set, plot that job log
+    if JOB_LOG_PATH != "":
+        plot_convergence() # Create convergence plots
