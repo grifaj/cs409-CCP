@@ -30,13 +30,15 @@ class Config_2:
 
     # model name - select architecture to train
     MODEL_NAME = model_types[1]
+    # path the python logger will store files to
+    LOG_PATH = f"./job_logs/run/{MODEL_NAME}_run.log"
     # path to read file names from (needs to be in a train.csv format)
     DATA_PATH = "./trainData.csv"
     # path which pretrained torch weights are stored to
     TORCH_MODEL_CACHE = ""
     
     # batch size
-    BATCH_SIZE = 18
+    BATCH_SIZE = 24
     # shuffle order of data in torch data loader
     SHUFFLE_DATA = True 
     # proportion of data for testing
@@ -44,21 +46,21 @@ class Config_2:
     # size of square images
     IMAGE_SIZE = 128
     # use the pretrained weights for chosen model
-    PRETRAINED = True
+    PRETRAINED = False
     # path the python logger will store files to
     LOG_PATH = f"./job_logs/run/{MODEL_NAME}{'_pretrained' if PRETRAINED else ''}_run.log"
     
     # learning rate
-    LEARNING_RATE = 0.00001
+    LEARNING_RATE = 0.0001
     # beta_1 and beta_2 momentum parameters for Adam
     ADAM_BETA = (0.5, 0.99)
     
     # total training epochs
-    EPOCHS = 100
+    EPOCHS = 70
     # path to save checkpoints
     CHECKPOINT_PATH = f"/dcs/large/seal-script-project-checkpoints/{MODEL_NAME}{'_pretrained' if PRETRAINED else ''}/"
     # save checkpoint every n epochs
-    SAVE_EVERY_N = 20
+    SAVE_EVERY_N = 10
     # load model checkpoint path -- leave blank to not load
     LOAD_CHECKPOINT_PATH = ""
 
