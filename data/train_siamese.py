@@ -214,9 +214,9 @@ def train_model(model:SiameseNetwork, dataloaders, datasets, optimisers, criteri
                 
             running_loss = 0.0
             
-            # for anchor, pos, neg in dataloaders[phase]:
-            logging.warn("!!! Using TQDM !!!")
-            for anchor, pos, neg in tqdm(dataloaders[phase]):
+            for anchor, pos, neg in dataloaders[phase]:
+            # logging.warn("!!! Using TQDM !!!")
+            # for anchor, pos, neg in tqdm(dataloaders[phase]):
                 anchor = anchor.to(device)
                 pos = pos.to(device)
                 neg = neg.to(device)
