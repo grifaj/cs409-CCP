@@ -29,7 +29,7 @@ class Config_2:
     model_types = ['resnet_50', 'mobilenet_v3_large', 'vgg_19']
 
     # model name - select architecture to train
-    MODEL_NAME = model_types[1]
+    MODEL_NAME = model_types[2]
     # path to read file names from (needs to be in a train.csv format)
     DATA_PATH = "./trainData.csv"
     # path which pretrained torch weights are stored to
@@ -44,12 +44,12 @@ class Config_2:
     # size of square images
     IMAGE_SIZE = 128
     # use the pretrained weights for chosen model
-    PRETRAINED = True
+    PRETRAINED = False
     # path the python logger will store files to
     LOG_PATH = f"./job_logs/run/{MODEL_NAME}{'_pretrained' if PRETRAINED else ''}_run.log"
     
     # learning rate
-    LEARNING_RATE = 0.00001
+    LEARNING_RATE = 0.0001
     # beta_1 and beta_2 momentum parameters for Adam
     ADAM_BETA = (0.5, 0.99)
     

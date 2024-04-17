@@ -83,10 +83,11 @@ def init_dataset(model_type):
         x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=C.TEST_SIZE, stratify=y)
 
         if model_type == 'resnet_50':
-            weights = models.ResNet50_Weights.DEFAULT
-            
+            weights = models.ResNet50_Weights.DEFAULT           
         elif model_type == 'mobilenet_v3_large':
             weights = models.MobileNet_V3_Large_Weights.DEFAULT
+        elif model_type == 'vgg_19':
+            weights = models.VGG19_Weights.DEFAULT
 
         transformation = weights.transforms()
 
@@ -206,6 +207,10 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch
     def steps(optimisers):
         for o in optimisers: o.step()
 
+    prev_model = model
+    prev_optim = optimisers[0]
+    prev_epoch = start_epoch
+
     if C.CHECKPOINT_PATH[-1] != "/": C.CHECKPOINT_PATH += "/"
     C.CHECKPOINT_PATH += datetime.today().strftime('%Y-%m-%d') + "/"
     os.makedirs(C.CHECKPOINT_PATH, exist_ok=True)
@@ -234,9 +239,13 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch
 
                 # Check for Nan outputs - save model before updating if exist
                 if torch.isnan(outputs).any():
-                    save_model(model, optimisers, epoch)
-                    logging.info(f"Nan outputs detected. Saving and stopping.")
+                    save_model(prev_model, prev_optim, prev_epoch)
+                    logging.info(f"Nan outputs detected. Saving previous version and stopping.")
                     sys.exit()
+
+                prev_model = model
+                prev_optim = optimisers[0]
+                prev_epoch = epoch
 
                 loss = criterion(torch.log(outputs), labels)
 
