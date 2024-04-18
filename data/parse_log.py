@@ -4,14 +4,14 @@ import re
 import argparse
 import numpy as np
 
-MASTER_LOG_PATH = './job_logs/run/mobilenet_v3_large_pretrained_run.log' # Path to log containing all job logs (master log file)
-OUTPUT_DIR = './job_logs/logs/mobilenet_pretrained' # Location to store job logs
-PLOT_DIR = './job_logs/plots/mobilenet_pretrained' # Location to store convergence plots
+MASTER_LOG_PATH = './job_logs/run/mobilenet_v3_large_run.siamese.log' # Path to log containing all job logs (master log file)
+OUTPUT_DIR = './job_logs/logs/siamese_mobilenet' # Location to store job logs
+PLOT_DIR = './job_logs/plots/siamese_mobilenet' # Location to store convergence plots
 
-JOB_LOG_PATH = './job_logs/logs/mobilenet_pretrained/[2024-04-17 13:54:28].log' # Path to job log to plot graphs for
+JOB_LOG_PATH = './job_logs/logs/siamese_mobilenet/[2024-04-17 20:12:37].log' # Path to job log to plot graphs for
 
-MODEL_NAME = 'MobileNetV3-Large'
-PRETRAINED = True
+MODEL_NAME = 'Siamese-MobileNetV3'
+PRETRAINED = False
 
 def plot_convergence():
     # Create path to store plots
@@ -27,8 +27,9 @@ def plot_convergence():
             if i == 0: # Create filename for plots 
                 filename = line[line.index('['):line.index(']')+1]
             if re.search('Epoch \d+/\d+', line) is not None: # There is a match
-                loss = re.search('Loss \d+.\d{1,5}', line)
-                acc = re.search('Accuracy \d+.\d{1,5}', line)
+                loss = re.search('Loss (\d+.\d{1,5})|Loss (\d+)', line)
+                acc = re.search('Accuracy (\d+.\d{1,5})|Accuracy (\d+)', line)
+                print(loss)
                 if loss is None or acc is None:
                     break
                 loss = loss.group().split(" ")[1]
@@ -81,7 +82,6 @@ def split_logs():
     with open(MASTER_LOG_PATH, 'r') as f:
         while True:
             line = f.readline()
-            
             if 'Logger started' in line:
                 filename = line[line.index('['):line.index(']')+1] + '.log'
                 if not os.path.exists(filename):
