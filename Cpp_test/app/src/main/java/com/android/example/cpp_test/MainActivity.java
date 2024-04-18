@@ -32,11 +32,11 @@ public class MainActivity extends AppCompatActivity {
 
         preloadModels(getAssets());
 
-        if (hasCameraPermission()) {
-            enableCamera();
-        } else {
+        while(!hasCameraPermission()){
             requestPermission();
         }
+        enableCamera();
+
     }
 
     private boolean hasCameraPermission() {

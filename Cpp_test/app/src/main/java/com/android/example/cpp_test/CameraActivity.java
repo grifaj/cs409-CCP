@@ -311,7 +311,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
                 float delta = mAccelCurrent - mAccelLast;
                 mAccel = mAccel * 0.9f + delta;
 
-                if (Math.abs(mAccel) < 0.05)
+                if (Math.abs(mAccel) < 0.1)
                 {
                     accelThreshCount +=1;
                     if (accelThreshCount % 30 == 0)
@@ -326,16 +326,11 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
                 }
             }
         }
-        else
-        {
-            return;
-        }
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy)
     {
-        return;
     }
 
     @Override
