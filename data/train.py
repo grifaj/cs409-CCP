@@ -146,26 +146,24 @@ def init_model(num_classes, model_type, pretrained=True, log=True): #, use_cpu=F
                     nn.Linear(1600, 512),
                     nn.LeakyReLU(negative_slope=0.1, inplace=True),    
                     nn.Dropout(p=0.2),
-                    nn.Linear(512, num_classes),
-                    nn.Softmax(dim=1)
+                    nn.Linear(512, num_classes)
         ).to(device)
     elif model_type == 'mobilenet_v3_large':
         model.classifier = nn.Sequential(
             nn.Linear(in_features=960, out_features=1280, bias=True),
             nn.Hardswish(),
             nn.Dropout(p=0.2, inplace=True),
-            nn.Linear(in_features=1280, out_features=num_classes, bias=True),
-            nn.Softmax(dim=1)
+            nn.Linear(in_features=1280, out_features=num_classes, bias=True)
         ).to(device)
     elif model_type == 'vgg_19':
         model.classifier[6] = nn.Linear(4096, num_classes, True).to(device)
         model.classifier = nn.Sequential(
-            model.classifier,
-            nn.Softmax(dim=1)
+            model.classifier
         )
 
-    # Use NLLLoss so that softmax can be applied in final layer of model, softmax + NLLLoss is equivalent to CrossEntropyLoss
-    criterion = nn.NLLLoss()
+    
+    # # Use NLLLoss so that softmax can be applied in final layer of model, softmax + NLLLoss is equivalent to CrossEntropyLoss
+    criterion = nn.CrossEntropyLoss()
     
     optimisers = [
         optim.Adam(model.parameters(), lr=C.LEARNING_RATE, betas=C.ADAM_BETA),
@@ -183,6 +181,7 @@ def init_model(num_classes, model_type, pretrained=True, log=True): #, use_cpu=F
 
 ## Save model dictionaries
 def save_model(model:nn.Module, optimisers, epoch:int):
+    model.classifier = nn.Sequential(model.classifier, nn.Softmax(dim=1))
     torch.save({
         "epoch": epoch,
         "model_state_dict": model.state_dict(),
@@ -248,7 +247,7 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch
                 prev_optim = optimisers[0]
                 prev_epoch = epoch
 
-                loss = criterion(torch.log(outputs), labels)
+                loss = criterion(outputs, labels)
 
                 if phase == 'train':
                     zero_grads(optimisers)
