@@ -35,15 +35,18 @@ void preloadModels(AAssetManager* manager) {
     auto beg = std::chrono::high_resolution_clock::now();
     mgr = manager;
 
-    int ret = translationModel.load_param(mgr,"mobilenet_v3_large_3-sim-opt.param");
+    int ret = translationModel.load_param(mgr,"mobilenet_v3_large-sim-opt.param");
     if (ret) {
         __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
     }
-    ret = translationModel.load_model(mgr, "mobilenet_v3_large_3-sim-opt.bin");
+    ret = translationModel.load_model(mgr, "mobilenet_v3_large-sim-opt.bin");
     if (ret) {
         __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
     }
     modelInitialisedFlag = true;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
+    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "load translate model %f", duration.count()/1000.0);
 
     ret = detectionModel.load_param(mgr,"model.ncnn.param");
     if (ret) {
@@ -54,9 +57,6 @@ void preloadModels(AAssetManager* manager) {
         __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
     }
     detmodelInitialisedFlag = true;
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
-    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "load models %f", duration.count()/1000.0);
 }
 
 cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
@@ -172,9 +172,9 @@ void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int o
         // Inference
         ncnn::Extractor extractor = translationModel.create_extractor();
         //extractor.set_light_mode(true);
-        extractor.input("input.1", input);
+        extractor.input("input", input);
         ncnn::Mat output;
-        extractor.extract("499", output);
+        extractor.extract("output", output);
 
 //        bugString = "Output w: " + std::to_string(output.w);
 //        __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());

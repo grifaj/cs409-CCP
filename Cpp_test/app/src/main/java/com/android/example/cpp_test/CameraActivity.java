@@ -360,7 +360,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
             imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this), imageProxy -> {
 
-                Log.d("acc", String.valueOf(mAccel));
+                //Log.d("acc", String.valueOf(mAccel));
                 if (accelThreshCount >= 5 && !predicted) {
                     Image image = imageProxy.getImage();
                     assert image != null;
