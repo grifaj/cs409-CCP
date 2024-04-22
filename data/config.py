@@ -7,6 +7,8 @@ class Config:
     DATA_PATH = "./trainData.csv"
     # path which pretrained torch weights are stored to
     TORCH_MODEL_CACHE = ""
+    # number of classes in classification task
+    C.NUM_CLASSES = 1000
     
     # batch size
     BATCH_SIZE = 18

@@ -4,25 +4,19 @@ import os
 import glob
 import csv
 import pandas as pd
-# import traceback
-# import argparse
 from tqdm import tqdm
-from config import Config_2 as C
+from config import Config as C
 import logging
 from datetime import datetime
 import sys
-
-os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
-
 import torch
 from torchvision import datasets, models, transforms
 import torch.nn as nn
-from torch.nn import functional as F
 import torch.optim as optim
 from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
-# from torchsummary import summary
 
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 # initialise logger
 logging.basicConfig(filename=C.LOG_PATH, encoding="utf-8", level=logging.INFO, 
@@ -34,7 +28,6 @@ logging.info("==========Logger started===========")
 ## Initialize device for cuda
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 logging.info(torch.cuda.is_available())
-print((torch.cuda.is_available()))
 
 # change model download path to /large
 if C.TORCH_MODEL_CACHE:
@@ -43,7 +36,7 @@ if C.TORCH_MODEL_CACHE:
 ## Initialize data
 class CharactersDataSet(Dataset):
   """
-  This is a custom dataset class.
+  This is a custom dataset class for loading images and labels.
   """
   def __init__(self, x, y, transform=None):
     self.x = x
@@ -67,7 +60,7 @@ class CharactersDataSet(Dataset):
 
 def init_dataset(model_type):
     '''
-        Initializes dataset and dataloaders used for training model. Reads data from CSV file <data_file>. Splits data into train, validation and test sets.
+        Initializes dataset and dataloaders used for training model. Reads data from CSV file specified in config. Splits data into train and validation sets.
     '''
 
     logging.info("Loading dataset")
@@ -109,7 +102,7 @@ def init_dataset(model_type):
 
 def init_model(num_classes, model_type, pretrained=True, log=True): #, use_cpu=False, pretrained=False):
     '''
-    Initialize device for cuda and load resnet50 model.
+    Initialize device for cuda and load specified model
     '''
     
     if model_type == 'resnet_50':
@@ -160,9 +153,7 @@ def init_model(num_classes, model_type, pretrained=True, log=True): #, use_cpu=F
         model.classifier = nn.Sequential(
             model.classifier
         )
-
     
-    # # Use NLLLoss so that softmax can be applied in final layer of model, softmax + NLLLoss is equivalent to CrossEntropyLoss
     criterion = nn.CrossEntropyLoss()
     
     optimisers = [
@@ -179,19 +170,21 @@ def init_model(num_classes, model_type, pretrained=True, log=True): #, use_cpu=F
 
     return model, criterion, optimisers
 
-## Save model dictionaries
+
 def save_model(model:nn.Module, optimisers, epoch:int):
-    model.classifier = nn.Sequential(model.classifier, nn.Softmax(dim=1))
+    ''' Save the model state, optimizer state and epoch so that they can be loaded in later to resume training '''
     torch.save({
         "epoch": epoch,
         "model_state_dict": model.state_dict(),
         "optimiser_a": optimisers[0].state_dict()
     }, C.CHECKPOINT_PATH + f"CK-{epoch}.pt")
 
+
 def load_model(model:nn.Module, optimisers, load_from:str):
+    ''' Load the model from load_from path '''
     logging.info(f"Loading checkpoint {load_from}")
     checkpoint = torch.load(load_from)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(checkpoint["model_state_dict"], strict=False)
     optimisers[0].load_state_dict(checkpoint["optimiser_a"])
     epoch = checkpoint["epoch"]
     logging.info("Loading done")
@@ -200,15 +193,12 @@ def load_model(model:nn.Module, optimisers, load_from:str):
 
 ## Train model
 def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch):
+    ''' Main training function containing training and valiation loop '''
     def zero_grads(optimisers):
         for o in optimisers: o.zero_grad()
         
     def steps(optimisers):
         for o in optimisers: o.step()
-
-    prev_model = model
-    prev_optim = optimisers[0]
-    prev_epoch = start_epoch
 
     if C.CHECKPOINT_PATH[-1] != "/": C.CHECKPOINT_PATH += "/"
     C.CHECKPOINT_PATH += datetime.today().strftime('%Y-%m-%d') + "/"
@@ -230,40 +220,33 @@ def train_model(model, dataloaders, datasets, optimisers, criterion, start_epoch
             running_loss = 0.0
             running_corrects = 0
 
+            # For all batches in phase
             for inputs, labels in dataloaders[phase]:
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
                 outputs = model(inputs)
 
-                # Check for NaN outputs - save model before updating if exist
-                if torch.isnan(outputs).any():
-                    save_model(prev_model, prev_optim, prev_epoch)
-                    logging.info(f"Nan outputs detected. Saving previous version and stopping.")
-                    sys.exit()
-
-                # Save current model params before updating for saving in case of NaN outputs
-                prev_model = model
-                prev_optim = optimisers[0]
-                prev_epoch = epoch
-
                 loss = criterion(outputs, labels)
 
+                # Update model if in training phase
                 if phase == 'train':
                     zero_grads(optimisers)
                     loss.backward()
                     steps(optimisers)
 
+                # Get predicted class and calculate performance metrics for batch
                 _, preds = torch.max(outputs, 1)
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
 
+            # Calculate performance metrics for epoch
             epochLoss = running_loss / datasets[phase].__len__()
             epochAccuracy = running_corrects.double() / datasets[phase].__len__()
 
             logging.info(f"[Epoch {epoch+1}/{C.EPOCHS}] {phase} [Loss {epochLoss:.4f}] [Accuracy {epochAccuracy:.4f}]")
 
-            if phase == "train" and (epoch + 1) % 20 == 0:
+            if phase == "train" and (epoch + 1) % C.SAVE_EVERY_N == 0:
                     save_model(model, optimisers, epoch)
     
     return model, optimisers, epoch
@@ -277,10 +260,13 @@ def main():
     logging.info("Loading data loaders")
     dataloaders, datasets, num_classes = init_dataset(model_type)
     logging.info(f"Num classes {num_classes}")
+    if not num_classes == C.NUM_CLASSES:
+        logging.critical(f"Number of detected classes does not agree with config file")
+        sys.exit()
     logging.info("Done")
     epoch=0
     logging.info(f"Loading {model_type}")
-    model, criterion, optimisers = init_model(num_classes, model_type, pretrained=pretrained, log=True)#, use_cpu, pretrained)
+    model, criterion, optimisers = init_model(num_classes, model_type, pretrained=pretrained, log=True)
     if C.LOAD_CHECKPOINT_PATH != "":
         model, epoch = load_model(model, optimisers, C.LOAD_CHECKPOINT_PATH)  
     logging.info("Done")

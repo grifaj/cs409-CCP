@@ -18,7 +18,7 @@ def convert_to_onnx():
     model_type = C.MODEL_NAME
 
     # Initialise model
-    model, criterion, optimiser = train.init_model(1000, model_type, pretrained=C.PRETRAINED, log=False)
+    model, criterion, optimiser = train.init_model(C.NUM_CLASSES, model_type, pretrained=C.PRETRAINED, log=False)
 
     print("[INFO] Loading model")
     # Load saved model parameters
@@ -34,7 +34,7 @@ def convert_to_onnx():
     model.eval()
 
     print("[INFO] Exporting to ONNX format")
-    
+
     # Export model to onnx format
     torch_out = onnx.export(model, 
                             x, 

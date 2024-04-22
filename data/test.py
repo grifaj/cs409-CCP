@@ -1,6 +1,5 @@
-from config import Config_2 as C
+from config import Config as C
 import train as train
-
 import torch 
 import torch.nn as nn
 import torch.onnx as onnx 
@@ -10,20 +9,24 @@ import pandas as pd
 from PIL import Image
 import random
 
-def test_model():
+def test_model(num_samples, model_path):
+    ''' Main function for testing model model_path. Contains testing loop and reports accuracy obtained on num_samples images '''
     model_type = C.MODEL_NAME
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # # Initialise model
-    model, criterion, optimiser = train.init_model(1000, model_type, pretrained=C.PRETRAINED, log=False)
+    # Initialise model
+    model, criterion, optimiser = train.init_model(C.NUM_CLASSES, model_type, pretrained=C.PRETRAINED, log=False)
 
-    # # Load saved model parameters
+    # Load saved model parameters
     model, _ = train.load_model(
         model, 
         optimiser, 
-        "/dcs/large/seal-script-project-checkpoints/mobilenet_v3_large/2024-04-17/CK-99.pt"
-        # "/dcs/large/seal-script-project-checkpoints/mobilenet_v3_large/2024-04-17/CK-19.pt"
+        model_path
         )
+    
+    model.classifier = nn.Sequential(model.classifier, nn.Softmax(dim=1))
+
+    print(model)
         
     model.to(device)
 
@@ -40,17 +43,14 @@ def test_model():
 
     transformation = weights.transforms()
 
-    # Get PyTorch predictions
+    # Read dataset csv to generate samples to test with
     csv = C.DATA_PATH
-    numRands = 10
+    numRands = num_samples # Number of test samples
     dataset = pd.read_csv(csv, names=['image', 'label'], index_col=False)
     samples = dataset.sample(n=numRands, ignore_index=True) # Get sample of dataset with indexing reset to 0,1,...,n-1
-    print(samples)
-    # print(samples)
 
     correct = 0
     pytorch_predictions = np.zeros((numRands,))
-    # tflite_predictions = np.zeros((numRands,))
 
     model.eval()
     for i, row in samples.iterrows():
@@ -66,45 +66,26 @@ def test_model():
 
         input = transformation(input)
         input = torch.unsqueeze(input, 0).to(device)
-        # print(input.shape)
-        label = torch.as_tensor(label)
 
+        label = torch.as_tensor(label)
         label = label.to(device)
 
         output = model(input)
-        print(output)
 
-        print(f"Nans: {torch.isnan(output).any()}")
-
-        # Get softmax output from model
-        # soft = nn.Softmax(dim=1)
-        # output = soft(output)
-        
-        # if i == 0:
         print(f'[INFO] Testing image: {image}')
-            # print(output)
 
         conf, preds = torch.max(output, 1)
         low_conf, _ = torch.min(output, 1)
-        # prediction = int(torch.max(output, 1).cpu().numpy())
-        # if i == 0:
+
         print(f"Prediction: {preds}")
         print(f"Actual: {value}")
         print(f"Confidence: {conf}")
         print(f"Lowest conf: {low_conf}")
         print()
+
         correct += torch.sum(preds == label.data)
-        # prediction = random.randint(0, 1075)
 
-
-    print(correct)
     print(f'[INFO] Accuracy = {round(correct.item() / numRands * 100, 2)}')
 
-def generate_test_batch(n):
-    csv = C.DATA_PATH
-    numRands = 10
-    dataset = pd.read_csv(csv, names=['image', 'label'], index_col=False)
-    samples = dataset.sample(n=numRands, ignore_index=True) # Get sample of dataset with indexing reset to 0,1,...,n-1
-
 if __name__=="__main__":
-    test_model()
+    test_model(num_samples=1000, model_path="/dcs/large/seal-script-project-checkpoints/mobilenet_v3_large/2024-04-19/CK-86.pt")
