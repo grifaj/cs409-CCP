@@ -1,9 +1,16 @@
-data/source/
+data/source
 data/testims/
 data/images/
 data/data/
 data/MASTER/
 data/test_ims/*/
+data/source_2/
+data/test/
+seal-script-images-raw/
+source/
+data/job_logs
+data/results
+
 
 **/__pycache__
 

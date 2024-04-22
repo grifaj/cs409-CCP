@@ -1,11 +1,8 @@
-from click import edit
+
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib as mpl
 import os
-# from wand.api import library
-# import wand.color
-# import wand.image
 import numpy as np
 from skimage import measure
 from PIL import Image
@@ -17,22 +14,37 @@ from tqdm import tqdm
 import scipy
 from tqdm import tqdm
 from character_translation_load import DatasetLoad
+import logging
+
+# Path to log file
+log = './distort_log.log'
+
+formatter = logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s")
+handler = logging.FileHandler(log)
+handler.setFormatter(formatter)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
 
 
-# CONSTANTS
-DATA_DIR = '/dcs/large/u2009169/seal-script-images'
+# Directory where raw scraped images are stored
+DATA_DIR = '/dcs/project/seal-script-project-data/seal-script-new/scraped'
+
+# Name of csv containing image paths and labels
+csvFile = './rawImages.csv'
+
+# Directory to save newly distorted images
+SAVE_DIR = '/dcs/project/seal-script-project-data/seal-script-new/distorted'
 IMG_FILETYPE = '.png'
-test = True
 
 # The character index to edit up to
-edit_index = 10
+edit_index = 1000
 
 # The number of variants to obtain for each character
-DESIRED_VARIANTS = 50
+DESIRED_VARIANTS = 100
 
 
 def load_image(file):
-#     img_folder = file[0:file.index('_')]
     img = Image.open(file).convert('L')
     
     im = np.asarray(img)
@@ -48,10 +60,11 @@ def resize_all_images():
                 im = load_image(name[:name.index(".")])
                 resized_image = pad_image((512,512), im.shape, im)
                 plt.imsave(os.path.join(root, name), resized_image, cmap='gray')
-                print(f'Saved resized image at {os.path.join(root, name)}')
+                print(f"Saved resized image at {os.path.join(root, name)}")
 
 
 def downsize_images(csvFile, i, new_height, new_width):
+    ''' Changes size of all images in csvFile with label greater than i to (new_height,new_width) '''
     data = pd.read_csv(csvFile, names = ["img", "label"])
     print(data)
     for x in tqdm(range(len(data["img"]))):
@@ -63,6 +76,7 @@ def downsize_images(csvFile, i, new_height, new_width):
         
         
 def binarise_image(im, thresh):
+    ''' Binarise image im at given threshold thresh '''
     idx = (im < thresh)
     
     binary_im = np.zeros(im.shape, dtype='int')
@@ -74,7 +88,8 @@ def binarise_image(im, thresh):
 
 
 def extract_character(im):
-    binary_im = binarise_image(im, 200) # Input images should be black & white anyway, so 128 is arbitrary
+    ''' Extracts the character from image im by finding extremes of bounding boxes of connected components within image '''
+    binary_im = binarise_image(im, 200) # Input images should be black & white anyway, so 200 is arbitrary
 
     # threshold at 200
     threshed = np.zeros(im.shape, 'int')
@@ -100,9 +115,9 @@ def extract_character(im):
     return extracted_char
     
     
-# find the coordinate bounding box of a given label in a components image
 def char_bounding_box(comps, label=1):
-    
+    ''' Find the coordinate bounding box of a given label in a components image '''
+
     # array of image coordinates in x and y
     xx, yy = np.meshgrid(np.arange(0,comps.shape[1]), np.arange(0,comps.shape[0]))
 
@@ -111,12 +126,12 @@ def char_bounding_box(comps, label=1):
     where_y = yy[comps==label]
     
     # find min and max extents of coordinates
-    return np.min(where_x), np.min(where_y), np.max(where_x), np.max(where_y)   
+    return np.min(where_x), np.min(where_y), np.max(where_x), np.max(where_y)     
 
 
-# Return image im with size shape_from after padding with 255 (white) to size shape_to
 def pad_image(shape_to, shape_from, im):
-#     print(f"Original size: {im.shape}")
+    ''' Return image im with size shape_from after padding with 255 (white) to size shape_to '''
+
     padded_image = np.pad(im, ((500,500),(500,500)), 'constant', constant_values=(255))
 
     if shape_from[0] > shape_to[0] and shape_from[1] > shape_to[1]:
@@ -124,24 +139,26 @@ def pad_image(shape_to, shape_from, im):
         cropped_image = np.asarray(cropped_image)
     else:
         cropped_image = padded_image[padded_image.shape[0]//2-shape_to[0]//2:padded_image.shape[0]//2+shape_to[0]//2, padded_image.shape[1]//2-shape_to[1]//2:padded_image.shape[1]//2+shape_to[1]//2]
-#     print(f"Cropped size: {cropped_image.shape}")
+
     return cropped_image
 
+def rotate_char(im, _, rot):
+    ''' Rotates character by rot degrees in image '''
 
-def rotate_char(im, std, rot):
-    
+    # Extract the character from the image
     extracted_char = extract_character(im)
+
+    # Rotate just the character
     rotated_char = ndimage.rotate(extracted_char, rot, reshape=True, mode='constant', cval=255)
     
-#     if rotated_char.shape[0] < im.shape[0] and rotated_char.shape[1] < im.shape[1]:
+    # Pad rotated character to return to the size of the original image
     rotated_image = pad_image((im.shape[0],im.shape[1]), rotated_char.shape, rotated_char)
-#     else:
-#         rotated_image = rotated_char
-    
+
     return rotated_image
 
 
-def add_gaussian_noise(img, std, rot):
+def add_gaussian_noise(img, std, _):
+    ''' Adds gaussian noise to image with standard deviation parameter std '''
     noise = np.random.normal(0, std, img.shape) 
 
     # Add the noise to the image
@@ -153,30 +170,38 @@ def add_gaussian_noise(img, std, rot):
     return img_noised
 
 
-def add_gaussian_blur(img, std, rot):
+def add_gaussian_blur(img, std, _):
+    ''' Adds gaussian blur to image with standard deviation parameter std '''
     std = int(std//10)
     gauss_blurred = ndimage.gaussian_filter(img, std)
     
     return gauss_blurred
 
 
-def remove_block(img, std, rot):
+def remove_block(img, _, _):
+    ''' Removes a square block of pixels from the image at a random location '''
     block_size = 20
+
+    # Extract character so removed block region is on top of character, not on the background
     extracted_char = extract_character(img)
-#     print(extracted_char.shape)
+
+    # Create block
     block_size = min(block_size, extracted_char.shape[0])
     block_size = min(block_size, extracted_char.shape[1])
     rand_x = random.randint(0, extracted_char.shape[0]-block_size)
     rand_y = random.randint(0, extracted_char.shape[1]-block_size)
-#     print(rand_x, rand_y)
+
+    # Set block region to white
     extracted_char[rand_x:rand_x+block_size, rand_y:rand_y+block_size] = 255
     
-    
+    # Pad character back to size of original image
     padded_image = pad_image((img.shape[0],img.shape[1]), extracted_char.shape, extracted_char)
+
     return padded_image
 
 
-def phase_swap(img, std, rot):
+def phase_swap(img, _, _):
+    ''' (NOT IN USE) Perform phase shift between the frequency representations of the image img and a standard zebra image '''
     A = img
     
     # now dft and swap phases
@@ -184,10 +209,10 @@ def phase_swap(img, std, rot):
     mag_A = np.abs(dft_A)
     angle_A = np.angle(dft_A)
     
-    ref_img = Image.open(os.path.join(DATA_DIR, 'zebra.gif')).convert('L')
+    ref_img = Image.open(os.path.join(data_dir, 'zebra.gif')).convert('L')
     ref_im = np.asarray(ref_img)
     ref_img_resized = ref_img.resize((img.shape[0], img.shape[1]))
-    dft_B = np.fft.fft2(ref_img_resized)  # type:ignore
+    dft_B = np.fft.fft2(ref_img_resized)
     mag_B = np.abs(dft_B)
     angle_B = np.angle(dft_B)
 
@@ -199,7 +224,8 @@ def phase_swap(img, std, rot):
     return B2
 
 
-def flip_image(img, std, rot):
+def flip_image(img, _, _):
+    ''' (NOT IN USE) Perform a horizontal flip of the image img '''
     im_flipped = np.flip(img, axis=1)
     return im_flipped
 
@@ -212,12 +238,17 @@ def squish_image(img, _, stretch):
     stretch = abs(stretch)+10 # always squish at least 10 percent and at most 40, before weights
     extracted_char = extract_character(img)
     h,w = extracted_char.shape[:2]
+
+    # If error when extracting character from image, skip transformation
+    if h == 0 or w == 0:
+        return img
     if inH:
         factor = 100 - (10 + (stretch - 10)*HWEIGHT)
         h = int(np.ceil(h * (factor/100)))
     else:
         factor = 100 - (10 + (stretch - 10)*VWEIGHT)
         w = int(np.ceil(w * (factor/100)))
+    # print(f'char size: {extracted_char.shape}, w: {w}, h: {h}')
     stretched_char = np.array(Image.fromarray(extracted_char).resize((w,h)))
     padded_image = pad_image(img.shape[:2], stretched_char.shape, stretched_char)
     return padded_image
@@ -225,19 +256,14 @@ def squish_image(img, _, stretch):
 
 
 def add_effects(im):
-    ### Function parameters:
-    #   im - the input image
-    #   std - the standard deviation of gaussian filters, 1 <= std <= 100
-    #   rot - the degree of rotation, -90 <= rot <= 90
+    ''' Add effects to image im. Chooses some character transformations and some pixel transformations at random and applies them to im '''
 
-    effects = { # CAN ADD HORIZONTAL FLIP
+    effects = {
         1: rotate_char,
         2: remove_block,
-        3: phase_swap,
-        4: flip_image,
-        5: add_gaussian_blur,
-        6: add_gaussian_noise,
-        7: squish_image
+        3: add_gaussian_blur,
+        4: add_gaussian_noise,
+        5: squish_image
     }
     
     effect_transform = [
@@ -245,15 +271,14 @@ def add_effects(im):
     ]
     
     effect_pixel = [
-        phase_swap, add_gaussian_blur, add_gaussian_noise
+        add_gaussian_blur, add_gaussian_noise
     ]
         
     numTransformEffects = random.randint(0, len(effect_transform))
     numPixelEffects = random.randint(0, len(effect_pixel))
     if numTransformEffects + numPixelEffects == 0:
         numTransformEffects += 1
-        
-    # num_effects = random.randint(1, len(effects)-2)
+
     effect_image = np.copy(im)
     
     for _ in range(numTransformEffects):
@@ -263,17 +288,10 @@ def add_effects(im):
     
     return effect_image
         
-    # for f in range(1, num_effects+1):
-    # for _ in range(num_effects):
-        # print(f"Effect: {f}")
-        # f= random.randint(1, len(effects))
-        # effect_image = effects[f](effect_image, random.randrange(10, 50, 10), random.randint(-30, 30))
-        # 
-    # return effect_image
-
-
 
 def make_variant(im_filename, variant_filename):
+    ''' Main function for making a distorted variant image. Loads im_filename, applies transformations and then saves image as variant_filename '''
+
     im = load_image(im_filename)
     
     # Enforce images are all 128x128
@@ -297,43 +315,61 @@ def get_data_csv_override(edit_index):
     DatasetLoad(DATA_DIR, edit_index, 'trainData.csv').createCsv() 
 
 
-def main(start_index=1):
-    if os.path.exists(os.path.join(DATA_DIR, 'trainData.csv')):
-        df = pd.read_csv(os.path.join(DATA_DIR,'trainData.csv'), sep=",", names = ["img", "label"])
-        name = df[df["label"] == 1]["img"][0][:]
-        # Loop over characters
-        for i in tqdm(range(start_index, len(df)+1)):
-            variant_num = 1
+def main():
+    currImage = None
+    try:
+        if os.path.exists(csvFile):
+            # Read image csv to get paths and labels
+            df = pd.read_csv(csvFile, sep=",", names = ["img", "label"])
+            labels = np.unique(np.asarray(df["label"], dtype=int))
+            name = df[df["label"] == 1]["img"][0][:]
 
-            # Number of images currently in folder for character i
-            num_variants = len(df[df["label"] == i])
+            # Loop over characters
+            for i in labels:
+                variant_num = 1
 
-            # Calculate number of variant images to make for each image in folder
-            div = num_variants
-            num = DESIRED_VARIANTS - num_variants
-            if num <= 0:
-                variants_to_make = [0 for _ in range(num_variants)]
-            else:
-                variants_to_make = ([num // div + (1 if x < num % div else 0)  for x in range (div)])
+                # Number of images currently in folder for character i
+                # Make character folder if not exists
+                directory = SAVE_DIR + '/' + str(i) + '/'
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
 
-            # Loop over images in character folder
-            for j in range(num_variants):
-                # Make required number of variants for each image
-                for k in range(variants_to_make[j]):
-                    # Make filename for new image
-                    variant_filename = DATA_DIR + '/' + str(i) + '/' + str(i) + '_' + str(num_variants+variant_num) + '.png'
+                # Get number of existing variant images for character
+                num_variants = len([name for name in os.listdir(directory) if (os.path.isfile(os.path.join(directory, name)) and IMG_FILETYPE in name)])
 
-                    # Make new variant image
-                    make_variant(df[df["label"] == i].iloc[j]["img"], variant_filename)
+                # Calculate number of variant images to make for each image in folder
+                div = len(df[df["label"] == i])
+                num = DESIRED_VARIANTS - num_variants
+                if num <= 0:
+                    variants_to_make = [0 for _ in range(num_variants)]
+                else:
+                    variants_to_make = ([num // div + (1 if x < num % div else 0)  for x in range (div)])
 
-                    # Increment to get next variant number for next new image filename
-                    variant_num += 1
-        print('[INFO] Image augmentation process finished.')
-    else:
-        print('[INFO] Image path csv does not exist, create in data directory.')
+                # Loop over images in character folder
+                for j in range(div):
+                    # Make required number of variants for each image
+
+                    currImage = df[df["label"] == i].iloc[j]["img"]
+                    logging.info(f'Making variants for {currImage}')
+                    for k in range(variants_to_make[j]):
+
+                        # Make filename for new image
+                        variant_filename = SAVE_DIR + '/' + str(i) + '/' + str(i) + '_' + str(num_variants+variant_num) + IMG_FILETYPE
+
+                        # Make new variant image
+                        make_variant(df[df["label"] == i].iloc[j]["img"], variant_filename)
+
+                        # Increment to get next variant number for next new image filename
+                        variant_num += 1
+
+            print('[INFO] Image augmentation process finished.') 
+        else:
+            print('[INFO] Image path csv does not exist, create in data directory.')              
+    except Exception as e:
+        logging.critical(f'Failed to distort image {currImage}. Error: {e}')
+    
         
         
 if __name__ == "__main__":
-    edit_index = 240+110+20
-    main(edit_index)
+    main()
         
