@@ -1,12 +1,12 @@
 # cs409-CCP
 
-![alt text](https://github.com/grifaj/cs409-CCP/blob/main/images/process.png?raw=true)
+![alt text](https://github.com/grifaj/cs409-CCP/blob/main/images/system_overview_landscape.jpg?raw=true)
 
-## Character recognition model
+## Character classification model
 
-The character recognition model handles translation of the images of individual seal script characters into modern Chinese. 
+The character classification model handles translation of the images of individual seal script characters into modern Chinese. 
 The current version of the model uses MobileNetV3-Large[^1]. All models are implemented with PyTorch. 
-All scripts and data used for training the Translation Model are kept under `/data`.
+All scripts and data used for training the classification model are kept under `/data`.
 
 ### Initial setup of environment
 
