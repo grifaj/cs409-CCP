@@ -35,6 +35,10 @@ public class ExampleInstrumentedTest {
         assertEquals("libraries load", validate(500,500));
     }
 
+    // convert image to greyscale correctly
+    // padded yolo image proporly
+
+
     public native String validate(long madAddrGr,long matAddrRgba);
     public native String stringFromJNI();
 }

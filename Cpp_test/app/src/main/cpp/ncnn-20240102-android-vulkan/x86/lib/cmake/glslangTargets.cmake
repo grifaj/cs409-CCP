@@ -2,7 +2,7 @@
             message(WARNING "Using `glslangTargets.cmake` is deprecated: use `find_package(glslang)` to find glslang CMake targets.")
 
             if (NOT TARGET glslang::glslang)
-                include("/home/runner/work/ncnn/ncnn/build-x86/install/lib/cmake/glslang/glslang-targets.cmake")
+                include("/home/grifaj/ncnn-build/ncnn/build-android-x86/install/lib/cmake/glslang/glslang-targets.cmake")
             endif()
 
             if(OFF)
