@@ -1,53 +1,45 @@
 # cs409-CCP
 
-## Training model
+![alt text](https://github.com/grifaj/cs409-CCP/blob/main/images/process.png?raw=true)
 
-All scripts and data used for training the Translation Model are kept under `/data/`.
+## Character recognition model
+
+The character recognition model handles translation of the images of individual seal script characters into modern Chinese. 
+The current version of the model uses MobileNetV3-Large[^1]. All models are implemented with PyTorch. 
+All scripts and data used for training the Translation Model are kept under `/data`.
 
 ### Initial setup of environment
 
-Several files and directories are required for training the model, so a script is called prior to training.
+#### Generating the dataset
 
-- Run command `python init_setup.py <data_file> <results_dir> <log_file> <data_dir> <file_ext>`
+The current list of characters used in the dataset can be found at `/data/classical_chars.csv` and uses the first 1000 characters taken from the list of most frequently used classical Chinese characters[^2]. The format of the CSV is *class label*, *character*.
 
-`<data_file>` is the name of the file containing image paths and labels for model training.
+The `main` function of `/data/scrape_seals.ipynb` can be run to automatically scrape images of seal script characters. The function currently reads a spreadsheet file downloaded from[^2] and then formats the desired list of characters to a CSV, then sets up the folder structure for storing the scraped images and then searches through two sources to find any available images. As web-scraping is quite a specific task, this function may need to be altered to fit the format of your input character list. Alternatively, you can create your own dataset CSV in the format specified above, and then comment out the first four commands in the `main` function. 
+The *dataDir* variable must be set, which is the location to store any scraped images. Images for a class will be stored in a directory under *dataDir* whose name will correspond to the class label. For example, if you have class labels 1,2,3,...,1000, *dataDir* will have 1000 sub-directories named 1,2,3,...,1000.
 
-`<results_dir>` is a directory which is created to store training results.
+It may not be possible to scrape images for all of the characters in the dataset CSV, so some may have to be drawn by hand or found through manual searching. The `checkMissingFolders()` function in the `/data/check_data_integrity.ipynb` file can be used to find folders without any images.
 
-`<log_file>` is the name of a text file which will record issues encountered while loading and processing the dataset for training. Text file will be stored at `<data_dir>/<log_file>`.
+The size of the dataset can be enlarged through creating distorted versions of the scraped images. To do this, use the `createCsv()` function in the `/data/create_dataset_csv.ipynb` file, first setting *DATA_DIR* to the *dataDir* location. This will create a CSV in format *image path*, *class label*. The current version of this CSV is given as `rawImages.csv` in `/examples`. Next, edit the variables in the `distort_image_batch.py` file and run it. This will create a desired number of images for each character and constitutes the final dataset.
 
-`<data_dir>` is the directory containing the training image subdirectories.
+#### Training a model
 
-`<file_ext>` is the file format of the training images, current is `.png`.
+Now that a dataset has been created, you can start training a model. Training uses a CSV to find images and get their class label, so use the `createCsv()` function in the `/data/create_dataset_csv.ipynb` file again, changing the *DATA_DIR* to the root directory of the dataset.
 
-### Using the Resnet50 training script
+The current dataset CSV is given as `trainData.csv` in `/examples` and contains 100 images for each class.
 
-Running the following command will begin training the CNN.
+To train a new model, it must be added to the *model_types* list of the *Config* class in `/data/config.py`. Select the model you wish to train with *MODEL_NAME* and change the other variables (incl. model parameters, checkpoint save locations etc.) as desired. Then, in `/data/train.py`, set the dataset transformation of the new model in the `init_dataset()` function and add the model to the `init_model()` function in the same style as the three existing models. Run the `main()` function to begin training.
 
-- `python resnet_50.py <BATCH_SIZE> <EPOCHS> <IMAGE_SIZE> <MODEL_NAME> <data_dir> <file_ext> <test_size> <data_file> <model_path> <results_dir> <log_file> -pretrained -use_cpu`
+#### Convert model to NCNN for implementation
 
-`<BATCH_SIZE>` - the batch size to use for training (integer).
+The process of converting a PyTorch model to NCNN format for application implementation is as follows:
 
-`<EPOCHS>` - the number of epochs to use for training (integer).
+PyTorch *.pt* file --> *.onnx* file --> NCNN *.bin* + *.param* files
 
-`<IMAGE_SIZE>` - the dimensions of the (square) input images (integer).
+Converting from *.pt* to *.onnx* is done by running the `/data/convert.py` file. Don't forget to set the conversion variables (_CONVERT_CHECKPOINT_PATH_, _BUILD_PATH_ and _ONNX_MODEL_NAME_) in `/data/config.py'.
 
-`<MODEL_NAME>` - the name of the model for use when creating result files, current is resnet50 (string).
+For converting *.onnx* to NCNN files, we use an external tool https://convertmodel.com/. Both the *.bin* and *.param* files are necessary for implementation into the application.
+## References
 
-`<data_dir>` - the directory containing the training image subdirectories (string).
+[^1]: Andrew Howard et al. ‘Searching for MobileNetV3’. In: CoRRabs/1905.02244 (2019). arXiv: 1905.02244. URL: http://arxiv.org/abs/1905.02244.
 
-`<file_ext>` - the file format of the training images, current is `.png` (string).
-
-`<test_size>` - the proportion of images to use for testing and validation (float). Images are split into train, test and validation by splitting twice with `<test_size>`.
-
-`<data_file>` - the name of the csv containing image paths and labels (string).
-
-`<model_path>` - the file where the trained model will be saved (string). Filename must end in `.pth` extension.
-
-`<results_dir>` - the path to the directory where the training results will be recorded (string).
-
-`<log_file>` - the name of the text file where training errors will be recorded (string).
-
-`-pretrained` - include if the model should be trained using the pretrained model weights (bool). `False` forces the model to be trained from scratch.
-
-`-use_cpu` - include if the training process should utilise the CPU only (bool). Set to `False` if CUDA/GPU functionality is available and preferred.
+[^2]: Jun Da. Character frequency lists 汉字单字频率列表. https://lingua.mtsu.edu/chinese-computing/statistics/. Accessed 15th April 2024, Page last updated 最近更新: 2005-12-21
