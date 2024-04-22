@@ -1,11 +1,10 @@
-from config import Config_2 as C
+from config import Config as C
 import train
-
 import torch 
+import torch.nn as nn
 import torch.onnx as onnx 
 from torchvision import transforms, models
 import numpy as np
-# import onnx_tf
 import pandas as pd
 
 def convert_to_onnx():
@@ -19,11 +18,14 @@ def convert_to_onnx():
     model_type = C.MODEL_NAME
 
     # Initialise model
-    model, criterion, optimiser = train.init_model(1075, model_type, pretrained=False, log=False)
+    model, criterion, optimiser = train.init_model(1000, model_type, pretrained=C.PRETRAINED, log=False)
 
     print("[INFO] Loading model")
     # Load saved model parameters
     model, _ = train.load_model(model, optimiser, C.CONVERT_CHECKPOINT_PATH)
+
+    # Add softmax layer to classifier
+    model.fc = nn.Sequential(model.fc, nn.Softmax(dim=1))
 
     # Generate dummy input to model
     x = torch.rand(1, 3, 224, 224).to("cuda")
@@ -32,6 +34,7 @@ def convert_to_onnx():
     model.eval()
 
     print("[INFO] Exporting to ONNX format")
+    
     # Export model to onnx format
     torch_out = onnx.export(model, 
                             x, 
