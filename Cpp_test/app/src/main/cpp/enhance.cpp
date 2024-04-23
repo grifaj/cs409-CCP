@@ -183,7 +183,7 @@ void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int o
 //        bugString = "Output c: " + std::to_string(output.c);
 //        __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
 
-        float max = output[0];
+        float max = 0.0;
         std::string argMax;
         for (int j = 0; j < output.w; j++) {
 
@@ -196,6 +196,9 @@ void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int o
             if (output[j] > max) {
                 max = output[j];
                 argMax = std::to_string(j+1);
+
+                bugString = "Class: " + std::to_string(j);
+                __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
             }
         }
         bugString = "Max class: " + argMax;
