@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
@@ -56,7 +57,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     private ProcessCameraProvider processCameraProvider;
 
     private PreviewView previewView;
-    private ImageView photoPreview, closePhotoPreview, swapImage;
+    private ImageView photoPreview, closePhotoPreview, swapImage, switchLens, liveMode, drawMode, cameraShutter;
     private DrawView drawView;
     private View resetZoom;
 
@@ -77,6 +78,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     private boolean translate = true;
     private boolean drawingMode;
     private boolean videoMode;
+    private boolean previewMode;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -85,14 +87,15 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         setContentView(R.layout.activity_main);
         drawingMode = false;
         videoMode = false;
+        previewMode = false;
 
         previewView = findViewById(R.id.previewView);
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
-        ImageView cameraShutter = findViewById(R.id.cameraShutter);
-        ImageView drawMode = findViewById(R.id.drawMode);
-        ImageView liveMode = findViewById(R.id.liveMode);
+        cameraShutter = findViewById(R.id.cameraShutter);
+        drawMode = findViewById(R.id.drawMode);
+        liveMode = findViewById(R.id.liveMode);
         photoPreview = findViewById(R.id.photoPreview);
-        ImageView switchLens = findViewById(R.id.switchLens);
+        switchLens = findViewById(R.id.switchLens);
         closePhotoPreview = findViewById(R.id.closePhotoPreview);
         resetZoom = findViewById(R.id.resetZoom);
         swapImage = findViewById(R.id.swapImage);
@@ -105,14 +108,13 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         // create camera view
         showImagePreview();
 
-        //cameraProviderFuture.addListener(this::showImagePreview, ContextCompat.getMainExecutor(this));
-
         // freeze camera preview on taken photo
         cameraShutter.setOnClickListener(v -> {
             // take photo from preview
             originalBitmap = previewView.getBitmap();
             assert originalBitmap != null;
             bitmapPhoto = originalBitmap.copy(originalBitmap.getConfig(), true);
+            previewMode = true;
             if (!drawingMode)
             {
                 detectChars(); // sets bitmap to have chars on it
@@ -218,18 +220,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
         // return to camera preview
         closePhotoPreview.setOnClickListener(v -> {
-            showImagePreview();
-            // set components back to invisible
-            photoPreview.setVisibility(View.GONE);
-            closePhotoPreview.setVisibility(View.GONE);
-            swapImage.setVisibility(View.GONE);
-
-            // add other buttons
-            switchLens.setVisibility(View.VISIBLE);
-            cameraShutter.setVisibility(View.VISIBLE);
-            drawMode.setVisibility(View.VISIBLE);
-            liveMode.setVisibility(View.VISIBLE);
-            resetZoom.setVisibility(View.VISIBLE);
+            closePreview();
         });
 
         switchLens.setOnClickListener(v -> {
@@ -294,6 +285,38 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
     }
 
+    public void closePreview(){
+        showImagePreview();
+        // set components back to invisible
+        photoPreview.setVisibility(View.GONE);
+        closePhotoPreview.setVisibility(View.GONE);
+        swapImage.setVisibility(View.GONE);
+
+        // add other buttons
+        switchLens.setVisibility(View.VISIBLE);
+        cameraShutter.setVisibility(View.VISIBLE);
+        drawMode.setVisibility(View.VISIBLE);
+        liveMode.setVisibility(View.VISIBLE);
+        resetZoom.setVisibility(View.VISIBLE);
+        previewMode = false;
+    }
+
+    @Override
+    public void onBackPressed() {
+        Log.d("backButton", "Pressed");
+        if (previewMode) {
+            closePreview();
+            return;
+        }
+        moveTaskToBack(true);
+
+        // don't judge, it works
+        if(1==0){
+            super.onBackPressed();
+        }
+
+    }
+
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (videoMode)
@@ -347,7 +370,6 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         super.onPause();
         sensorMan.unregisterListener(this);
     }
-
 
     @OptIn(markerClass = ExperimentalGetImage.class) private void showImagePreview()
     {
