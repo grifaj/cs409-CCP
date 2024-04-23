@@ -162,13 +162,17 @@ void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int o
         ncnn::Mat output;
         extractor.extract("output", output);
 
-        float max = output[0];
+        float max = 0.0;
         std::string argMax;
         for (int j = 0; j < output.w; j++) {
+
 
             if (output[j] > max) {
                 max = output[j];
                 argMax = std::to_string(j+1);
+
+                bugString = "Class: " + std::to_string(j);
+                __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
             }
         }
         bugString = "Max class: " + argMax;
@@ -461,7 +465,7 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig, int option) {
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
-    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "yolo detection %f", duration.count()/1000.0);
+    __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "yolo dectection %f", duration.count()/1000.0);
 
     beg = std::chrono::high_resolution_clock::now();
 
@@ -519,6 +523,11 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg, int option) {
     grayErode.release();
     grayImg.release();
 
+//    cv::Mat mserDetect;
+//    mserDetect = mserDetection(graySmoothed, img, false);
+//
+//    return mserDetect;
+
     cv::Mat grayBGR;
     cvtColor(graySmoothed, grayBGR, cv::COLOR_GRAY2BGR);
 
@@ -561,3 +570,19 @@ cv::Mat captureBoxImage(AAssetManager* manager, cv::Mat srcImg, int x, int y, in
     __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "total time %f", duration.count()/1000.0);
     return translateFinal;
 }
+
+//int main(int, char**) {
+//    std::string path = "..\\..\\..\\seal script image 14.jpg";
+//    cv::Mat img = cv::imread(path);
+//    double factor = 700.0 / img.size().height;
+//    cv::resize(img, img, cv::Size(), factor, factor, cv::INTER_CUBIC);
+//
+//
+//
+//
+//    cv::Mat Image = captureImage(img);
+//
+//    cv::imshow("Image", Image);
+//
+//    cv::waitKey(0);
+//}
