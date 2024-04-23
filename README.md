@@ -1,4 +1,11 @@
-# cs409-CCP
+<div align="center">
+
+<img src="https://github.com/grifaj/cs409-CCP/assets/17861497/96fec4b0-3a4f-4e5e-9dea-bccb3126933c">
+
+</div>
+
+
+# cs409-CCP | Android Application
 
 Setup instrucitons:
 
