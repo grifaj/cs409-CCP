@@ -1,6 +1,10 @@
-![chinese computnig project header svg 2024_04_23_15_35_47 0](https://github.com/grifaj/cs409-CCP/assets/17861497/96fec4b0-3a4f-4e5e-9dea-bccb3126933c)
+<div align="center">
 
-# cs409-CCP
+<img src="https://github.com/grifaj/cs409-CCP/assets/17861497/96fec4b0-3a4f-4e5e-9dea-bccb3126933c">
+
+</div>
+
+# cs409-CCP | Seal Script Translation
 
 ![alt text](https://github.com/grifaj/cs409-CCP/blob/main/images/system_overview_landscape.jpg?raw=true)
 
