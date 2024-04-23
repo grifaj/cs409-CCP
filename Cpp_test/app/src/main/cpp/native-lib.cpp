@@ -50,3 +50,31 @@ Java_com_android_example_cpp_1test_CameraActivity_callBoundingBoxes2(JNIEnv *env
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     *matImage =  captureBoxImage(mgr,*matImage,x,y,w,h);
 }
+
+// testing functions
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_testModelsLoad(JNIEnv *env, jobject thiz, jobject assetManager) {
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    std::string pass =  "libraries load";
+    std::string fail =  "fail";
+    ncnn::Net translationModel;
+    ncnn::Net detectionModel;
+    int ret = translationModel.load_param(mgr,"mobilenet_v3_large-sim-opt.param");
+    if (ret) {
+        return env->NewStringUTF(fail.c_str());
+    }
+    ret = translationModel.load_model(mgr, "mobilenet_v3_large-sim-opt.bin");
+    if (ret) {
+        return env->NewStringUTF(fail.c_str());
+    }
+    ret = detectionModel.load_param(mgr,"model.ncnn.param");
+    if (ret) {
+        return env->NewStringUTF(fail.c_str());
+    }
+    ret = detectionModel.load_model(mgr, "model.ncnn.bin");
+    if (ret) {
+        return env->NewStringUTF(fail.c_str());
+    }
+    return env->NewStringUTF(pass.c_str());
+}

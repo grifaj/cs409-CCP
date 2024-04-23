@@ -1,14 +1,19 @@
 package com.android.example.cpp_test;
 
 import android.content.Context;
+import android.content.res.AssetManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.*;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -20,6 +25,7 @@ public class ExampleInstrumentedTest {
     static {
         System.loadLibrary("cpp_test");
     }
+    private final Context ctx = InstrumentationRegistry.getInstrumentation().getTargetContext();
     @Test
     public void useAppContext() {
         // Context of the app under test.
@@ -34,11 +40,17 @@ public class ExampleInstrumentedTest {
     public void libraries_load(){
         assertEquals("libraries load", validate(500,500));
     }
+    @Test
+    public void test_ReadAssets() throws IOException {
+        InputStream input = ctx.getAssets().open("overlays/1.bmp");
+        Assert.assertNotNull(input);
+    }
+    @Test
+    public void models_load(){assertEquals("libraries load", testModelsLoad(ctx.getAssets()));}
 
     // convert image to greyscale correctly
-    // padded yolo image proporly
-
-
+    // padded yolo image properly
     public native String validate(long madAddrGr,long matAddrRgba);
     public native String stringFromJNI();
+    public native String testModelsLoad(AssetManager assetManager);
 }
