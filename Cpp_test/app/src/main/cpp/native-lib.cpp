@@ -89,6 +89,10 @@ Java_com_android_example_cpp_1test_ExampleInstrumentedTest_calculate_1IOU(JNIEnv
     {
         cv::Rect a = cv::Rect(0, 0, 100, 100);
         ret = calculate_IOU(a, a);
+    } else if (flag == 2){
+        cv::Rect a = cv::Rect(0, 0, 100, 100);
+        cv::Rect b = cv::Rect(200, 200, 100, 100);
+        ret = calculate_IOU(a, b);
     }
     return ret;
 }

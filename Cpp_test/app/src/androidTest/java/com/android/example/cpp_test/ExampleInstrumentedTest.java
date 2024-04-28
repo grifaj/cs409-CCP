@@ -3,6 +3,7 @@ package com.android.example.cpp_test;
 import android.content.Context;
 import android.content.res.AssetManager;
 
+import androidx.test.core.app.ApplicationProvider;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -49,18 +50,16 @@ public class ExampleInstrumentedTest {
     @Test
     public void models_load(){assertEquals("libraries load", testModelsLoad(ctx.getAssets()));}
     @Test
-    public void IoU_full(){
-        double delta = 0.01;
-        assertEquals(1,calculate_IOU(1),delta);
-
-    }
+    public void IoU_full(){assertEquals(1,calculate_IOU(1),0);}
     @Test
-    public void convert2Grey(){
-        assertTrue(greyImage());
+    public void IoU_empty(){assertEquals(0,calculate_IOU(2),0);}
+    @Test
+    public void convert2Grey(){assertTrue(greyImage());}
+    @Test
+    public void binariseImg(){
+
     }
 
-    // convert image to greyscale correctly
-    // padded yolo image properly
     public native String validate(long madAddrGr,long matAddrRgba);
     public native String stringFromJNI();
     public native String testModelsLoad(AssetManager assetManager);
