@@ -77,7 +77,8 @@ public class ExampleInstrumentedTest {
     public void non_max_suppression(){assertTrue(JNI_non_max_suppression());}
     @Test
     public void image_pad(){assertTrue(padImage());}
-
+    @Test
+    public void scaleImg(){assertTrue(scale_img());}
     public native String validate(long madAddrGr,long matAddrRgba);
     public native String stringFromJNI();
     public native String testModelsLoad(AssetManager assetManager);
@@ -87,4 +88,5 @@ public class ExampleInstrumentedTest {
     public native boolean JNI_sortParallelVector();
     public native boolean JNI_non_max_suppression();
     public native boolean padImage();
+    public native boolean scale_img();
 }

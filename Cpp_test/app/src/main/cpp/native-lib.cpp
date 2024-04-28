@@ -181,3 +181,15 @@ Java_com_android_example_cpp_1test_ExampleInstrumentedTest_padImage(JNIEnv *env,
     cv::Mat output = padImage(&srcImg);
     return output.size().height == 512 && output.size().width == 512;
 }
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_scale_1img(JNIEnv *env, jobject thiz) {
+    cv::Mat srcImg(1024, 2048, CV_8UC3, cv::Scalar(100, 100, 100));
+    float* sf;
+
+    cv::Mat output =  resizeSF(&srcImg, sf);
+
+    __android_log_print(ANDROID_LOG_DEBUG, "Testing", "%d, %d, %f", output.size().height, output.size().width, *sf);
+
+    return false;
+}

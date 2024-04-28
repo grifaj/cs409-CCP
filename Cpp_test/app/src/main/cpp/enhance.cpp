@@ -104,7 +104,6 @@ cv::Mat grayToBGR(cv::Mat* srcImg)
 cv::Mat resizeSF(cv::Mat *srcImg, float* sf)
 {
     cv::Mat srcScaled;
-
     if(srcImg->rows >= srcImg->cols)
     {
         *sf = 512.0/(float)srcImg->rows;
@@ -113,7 +112,6 @@ cv::Mat resizeSF(cv::Mat *srcImg, float* sf)
     {
         *sf = 512.0/(float)srcImg->cols;
     }
-
     cv::resize(*srcImg, srcScaled, cv::Size(), *sf, *sf);
 
     return srcScaled;
