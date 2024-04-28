@@ -81,7 +81,15 @@ Java_com_android_example_cpp_1test_ExampleInstrumentedTest_testModelsLoad(JNIEnv
 }
 extern "C"
 JNIEXPORT jfloat JNICALL
-Java_com_android_example_cpp_1test_ExampleInstrumentedTest_calculate_1IOU(JNIEnv *env, jobject thiz, CvRect a, CvRect b) {
-    float ret = calculate_IOU(a, b);
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_calculate_1IOU(JNIEnv *env, jobject thiz, jint flag) {
+    int flag_num = (int) flag;
+    float ret = 0.0;
+
+    if (flag == 1)
+    {
+        cv::Rect a = cv::Rect(0, 0, 100, 100);
+        ret = calculate_IOU(a, a);
+    }
+
     return ret;
 }

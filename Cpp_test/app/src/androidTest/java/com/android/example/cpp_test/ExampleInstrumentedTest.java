@@ -50,9 +50,8 @@ public class ExampleInstrumentedTest {
     public void models_load(){assertEquals("libraries load", testModelsLoad(ctx.getAssets()));}
     @Test
     public void IoU_full(){
-        Rect a = new Rect(0, 0, 100, 100);
         double delta = 0.01;
-        assertEquals(1,calculate_IOU(a, a),delta);
+        assertEquals(1,calculate_IOU(1),delta);
 
     }
     // convert image to greyscale correctly
@@ -60,5 +59,5 @@ public class ExampleInstrumentedTest {
     public native String validate(long madAddrGr,long matAddrRgba);
     public native String stringFromJNI();
     public native String testModelsLoad(AssetManager assetManager);
-    public native float calculate_IOU(Rect a, Rect b);
+    public native float calculate_IOU(int flag);
 }
