@@ -695,16 +695,9 @@ void getTranslation(cv::Mat* srcImg, float* max, std::string* argMax)
             *argMax = std::to_string(j+1);
         }
     }
-
-    std::string bugString;
-    bugString = "Max class: " + *argMax;
-    __android_log_print(ANDROID_LOG_DEBUG, "REFACTOR", "%s", bugString.c_str());
-
-    bugString = "Max confidence: " + std::to_string(*max);
-    __android_log_print(ANDROID_LOG_DEBUG, "REFACTOR", "%s", bugString.c_str());
 }
 
-void overlayTranslation(cv::Mat roi, cv::Mat replaceroi, float* max, std::string* argMax, int option)
+void overlayTranslation(cv::Mat roi, cv::Mat replaceroi, float* max, std::string* argMax)
 {
     float confThreshold = 0.7;
     if (*max >= confThreshold)
@@ -783,8 +776,6 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg, int option) {
     std::vector<cv::Rect>* selected_boxes = new std::vector<cv::Rect>();
     nms(boxes, confidences, selected_boxes, 0.5);
 
-    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "boxes found %zu",selected_boxes->size());
-
     if(!modelInitialisedFlag)
     {
         loadTranslationModel();
@@ -805,18 +796,17 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg, int option) {
     std::string argMax_class;
     for (std::size_t i = 0; i != selected_boxes->size(); i++)
     {
-          cv::rectangle(srcImg, (*selected_boxes)[i], cv::Scalar(255, 0, 0), 1);
-//        cv::Mat roi = srcImg((*selected_boxes)[i]);
-//        cv::Mat replaceroi = replaceImg((*selected_boxes)[i]);
-//        cv::Mat binRoi = binariseBox(srcImg, (*selected_boxes)[i]);
-//
-//        binRoi = translationPreProcess(&binRoi);
-//
-//        getTranslation(&binRoi, &max_class, &argMax_class);
-//
-//        binRoi = translationPreProcess(&binRoi);
-//
-//        overlayTranslation(roi, replaceroi, &max_class, &argMax_class, option);
+        cv::Mat roi = srcImg((*selected_boxes)[i]);
+        cv::Mat replaceroi = replaceImg((*selected_boxes)[i]);
+        cv::Mat binRoi = binariseBox(srcImg, (*selected_boxes)[i]);
+
+        binRoi = translationPreProcess(&binRoi);
+
+        getTranslation(&binRoi, &max_class, &argMax_class);
+
+        binRoi = translationPreProcess(&binRoi);
+
+        overlayTranslation(roi, replaceroi, &max_class, &argMax_class);
 
     }
 
@@ -886,18 +876,23 @@ cv::Mat captureBoxImage(AAssetManager* manager, cv::Mat srcImg, int x, int y, in
     mgr = manager;
     cv::Rect box = cv::Rect(x, y, w, h);
 
-    cv::Mat img;
-    cvtColor(srcImg, img, cv::COLOR_RGBA2BGR);
+    //cv::Mat img;
+    //cvtColor(srcImg, img, cv::COLOR_RGBA2BGR);
+    float max_class;
+    std::string argMax_class;
+    cv::Mat roi = srcImg(box);
+    cv::Mat replaceroi = srcImg(box);
+    cv::Mat binRoi = binariseBox(srcImg, box);
+    binRoi = translationPreProcess(&binRoi);
+    getTranslation(&binRoi, &max_class, &argMax_class);
+    binRoi = translationPreProcess(&binRoi);
 
-    cv::Mat translateBox;
-    displayOverlay(img, box, img, 0);
+    overlayTranslation(roi, replaceroi, &max_class, &argMax_class);
 
-    cv::Mat translateFinal;
-    cvtColor(img, translateFinal, cv::COLOR_BGR2RGBA);
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(end - beg);
     __android_log_print(ANDROID_LOG_DEBUG, "WallClock", "total time %f", duration.count()/1000.0);
-    return translateFinal;
+    return srcImg;
 }
 
 
