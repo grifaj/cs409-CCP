@@ -21,11 +21,13 @@ AAssetManager* mgr;
 void loadTranslationModel() {
     // Load model
     int ret = translationModel.load_param(mgr,"mobilenet_v3_large-sim-opt.param");
-    if (ret) {
+    if (ret)
+    {
          __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
     }
     ret = translationModel.load_model(mgr, "mobilenet_v3_large-sim-opt.bin");
-    if (ret) {
+    if (ret)
+    {
        __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
     }
     modelInitialisedFlag = true;
@@ -36,11 +38,13 @@ void preloadModels(AAssetManager* manager) {
     mgr = manager;
 
     int ret = translationModel.load_param(mgr,"mobilenet_v3_large-sim-opt.param");
-    if (ret) {
+    if (ret)
+    {
         __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
     }
     ret = translationModel.load_model(mgr, "mobilenet_v3_large-sim-opt.bin");
-    if (ret) {
+    if (ret)
+    {
         __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
     }
     modelInitialisedFlag = true;
@@ -189,11 +193,13 @@ void detectModel(cv::Mat *srcImg, cv::Mat *orig, float* sf, std::vector<cv::Rect
 void loadDetectionModel()
 {
     int ret = detectionModel.load_param(mgr,"model.ncnn.param");
-    if (ret) {
+    if (ret)
+    {
         __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
     }
     ret = detectionModel.load_model(mgr, "model.ncnn.bin");
-    if (ret) {
+    if (ret)
+    {
         __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
     }
     detmodelInitialisedFlag = true;
@@ -201,7 +207,6 @@ void loadDetectionModel()
 
 void sortParallelVector(std::vector<cv::Rect>* vec, std::vector<float>* score_vec)
 {
-
     std::vector<cv::Rect>& vec_ref = *vec;
     std::vector<float>& score_ref = *score_vec;
 
@@ -226,7 +231,6 @@ void sortParallelVector(std::vector<cv::Rect>* vec, std::vector<float>* score_ve
 
     *vec = vec_ordered;
     *score_vec = score_vec_ordered;
-
 }
 
 float calculate_IOU(cv::Rect a, cv::Rect b)
@@ -261,7 +265,6 @@ float calculate_IOU(cv::Rect a, cv::Rect b)
     float intersection_area = intersection_width * intersection_height;
 
     return (float) intersection_area / (float) (areaA + areaB - intersection_area);
-
 }
 
 void nms(std::vector<cv::Rect>* boxes, std::vector<float>* scores, std::vector<cv::Rect>* selected, float thresh)
