@@ -12,5 +12,9 @@ cv::Mat captureBoxImage(AAssetManager* mgr, cv::Mat srcImg, int x, int y, int w,
 void preloadModels(AAssetManager* mgr);
 float calculate_IOU(cv::Rect a, cv::Rect b);
 cv::Mat grayImage(cv::Mat* srcImg);
+cv::Mat binariseBox(cv::Mat img, cv::Rect inBox);
+void sortParallelVector(std::vector<cv::Rect>* vec, std::vector<float>* score_vec);
+void nms(std::vector<cv::Rect>* boxes, std::vector<float>* scores, std::vector<cv::Rect>* selected, float thresh);
+cv::Mat padImage(cv::Mat *srcImg);
 
 #endif //CPP_TEST_ENHANCE_H

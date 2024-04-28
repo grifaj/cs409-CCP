@@ -105,3 +105,79 @@ Java_com_android_example_cpp_1test_ExampleInstrumentedTest_greyImage(JNIEnv *env
     return  output.channels() == 1;
 
 }
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_binariseImg(JNIEnv *env, jobject thiz,
+                                                                       jlong image) {
+    cv::Mat* matImage=(cv::Mat*)image;
+    cv::Rect inBox(0,0,20,20);
+    cv::Mat bin = binariseBox(*matImage, inBox);
+
+    // check all values 255 or 0
+    uint8_t* pixelPtr = (uint8_t*)bin.data;
+    bool binary = true;
+    for (int i = 0; i < bin.size().height ; ++i) {
+        for (int j = 0; j < bin.size().width; ++j) {
+            if (pixelPtr[i*bin.cols + j] != 0 && pixelPtr[i*bin.cols + j] != 255){
+                binary = false;
+                break;
+            }
+        }
+    }
+    return bin.channels() == 3 && bin.size().height == 20 && bin.size().width == 20 && binary;
+}
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_JNI_1sortParallelVector(JNIEnv *env,
+                                                                                   jobject thiz) {
+    std::vector<cv::Rect>* vec = new std::vector<cv::Rect>();
+    vec->push_back(cv::Rect(0,0,10,10));
+    vec->push_back(cv::Rect(15,100,97,88));
+    vec->push_back(cv::Rect(10,20,30,40));
+
+    std::vector<float> *score_vec =  new std::vector<float>();
+    score_vec->push_back(10);
+    score_vec->push_back(30);
+    score_vec->push_back(100);
+
+    sortParallelVector(vec, score_vec);
+
+    bool rects = false;
+    if(vec[0][0] == cv::Rect(10,20,30,40) &&  vec[0][1] == cv::Rect(15,100,97,88) && vec[0][2] == cv::Rect(0,0,10,10))rects = true;
+    bool scores = false;
+    if(score_vec[0][0] == 100.0 && score_vec[0][1] == 30 && score_vec[0][2] == 10) scores = true;
+
+    return rects && scores;
+}
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_JNI_1non_1max_1suppression(JNIEnv *env,
+                                                                                      jobject thiz) {
+
+    std::vector<cv::Rect>* boxes = new std::vector<cv::Rect>();
+    boxes->push_back(cv::Rect(100,100,50,50));
+    boxes->push_back(cv::Rect(100,100,50,50));
+    boxes->push_back(cv::Rect(10,20,30,40));
+    boxes->push_back(cv::Rect(10,20,30,40));
+
+    std::vector<float> *scores =  new std::vector<float>();
+    scores->push_back(100);
+    scores->push_back(1);
+    scores->push_back(100);
+    scores->push_back(1);
+
+    std::vector<cv::Rect>* selected = new std::vector<cv::Rect>();
+
+    // should only keep 2 boxes
+    nms(boxes, scores, selected, 0.5);
+
+    bool output = (selected[0][0] == cv::Rect(100,100,50,50) && selected[0][1] == cv::Rect(10,20,30,40));
+    return output && selected->size() == 2;
+}
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_padImage(JNIEnv *env, jobject thiz) {
+    cv::Mat srcImg(512, 240, CV_8UC3, cv::Scalar(100, 100, 100));
+    cv::Mat output = padImage(&srcImg);
+    return output.size().height == 512 && output.size().width == 512;
+}

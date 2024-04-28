@@ -8,6 +8,9 @@
       <entry key="app">
         <State />
       </entry>
+      <entry key="image_pad()">
+        <State />
+      </entry>
     </value>
   </component>
 </project>
