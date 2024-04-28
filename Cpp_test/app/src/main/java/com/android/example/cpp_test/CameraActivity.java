@@ -48,7 +48,8 @@ import java.util.concurrent.ExecutionException;
 import dalvik.annotation.optimization.FastNative;
 
 public class CameraActivity extends AppCompatActivity implements SensorEventListener {
-    static {
+    static
+    {
         System.loadLibrary("cpp_test");
     }
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;

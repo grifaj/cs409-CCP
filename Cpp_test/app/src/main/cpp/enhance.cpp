@@ -64,11 +64,19 @@ cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
     cv::Mat grayImg;
     cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
 
+    /*
+     * Test that image is correctly converted to grayscale
+     */
+
     cv::Mat boxImg(grayImg, inBox);
 
     //smooth the box - possibly remove?
     cv::Mat boxSmoothed;
     cv::medianBlur(boxImg, boxSmoothed, 5);
+
+    /*
+     * Test that image is different after preprocessing
+     */
 
     cv::Mat threshBox;
 
@@ -77,6 +85,9 @@ cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
     boxSmoothed.release();
     grayImg.release();
 
+    /*
+     * Test that image is correctly binarised (only two colours)
+     */
 
     int rows = threshBox.rows;
     int cols = threshBox.cols;
@@ -88,13 +99,21 @@ cv::Mat binariseBox(cv::Mat img, cv::Rect inBox)
 
     int sum_corners = box_tl + box_bl + box_tr + box_br;
 
-    if (sum_corners <= 255)
+    if (sum_corners <= 510)
     {
         cv::bitwise_not(threshBox, threshBox);
     }
 
+    /*
+     * Test that at least two corner pixels are 0
+     */
+
     cv::Mat threshBGR;
     cvtColor(threshBox, threshBGR, cv::COLOR_GRAY2BGR);
+
+    /*
+    * Test that image is correctly converted to BGR and all three vec values are the same
+    */
 
     return threshBGR;
 }
@@ -125,6 +144,12 @@ void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int o
         cv::Rect roiRect(location);
         cv::Mat roi = colImg(roiRect);
         cv::Mat replaceroi = replaceImg(roiRect);
+
+        /*
+        * Test that image is correct extracted dimensions from rectangle.
+         * Test that values are equal in the two regions
+        */
+
         // binarise image
         cv::Mat binRoi = binariseBox(colImg, roiRect);
 
@@ -134,11 +159,19 @@ void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int o
         cv::Mat binRoiR;
         cv::resize(binRoi, binRoiR, cv::Size(232, 232));
 
+        /*
+        * Test that image is resized to 232 x 232
+        */
+
         const int cropSize = 224;
         const int offsetW = (binRoiR.cols - cropSize) / 2;
         const int offsetH = (binRoiR.rows - cropSize) / 2;
         const cv::Rect roiBin(offsetW, offsetH, cropSize, cropSize);
         binRoi = binRoiR(roiBin).clone();
+
+        /*
+        * Test that image is resized to 224 x 224
+        */
 
         bugString = "Processed binary box";
         __android_log_print(ANDROID_LOG_DEBUG, "binary box", "%s", bugString.c_str());
@@ -152,7 +185,6 @@ void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int o
 
         float means[] = {0.485f*255.f, 0.456f*255.f, 0.406*255.f};
         float norms[] = {1/0.229f/255.f, 1/0.224/255.f, 1/0.225f/255.f};
-
         input.substract_mean_normalize(means, norms);
 
         // Inference
@@ -165,8 +197,6 @@ void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int o
         float max = 0.0;
         std::string argMax;
         for (int j = 0; j < output.w; j++) {
-
-
             if (output[j] > max) {
                 max = output[j];
                 argMax = std::to_string(j+1);
@@ -175,6 +205,11 @@ void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int o
                 __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
             }
         }
+
+        /*
+        * check that confidence is <= 1 and that max class is between 1 and 1000
+        */
+
         bugString = "Max class: " + argMax;
         __android_log_print(ANDROID_LOG_DEBUG, "translation model", "%s", bugString.c_str());
 
@@ -186,9 +221,14 @@ void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int o
         if (max >= confThreshold)
         {
 
+            /*
+            * Check confidence threshold is always > 0.7
+            */
+
             std::string filename = "overlays/";
             filename.append(argMax);
             filename.append(".bmp");
+
             // load file from assets
             AAsset *asset = AAssetManager_open(mgr, filename.c_str(), 0);
             long size = AAsset_getLength(asset);
@@ -225,9 +265,13 @@ void displayOverlay(cv::Mat colImg, cv::Rect location, cv::Mat replaceImg, int o
                 cv::merge(channels, overlayImg);
             }
 
-
             addWeighted(overlayImg, 1, roi, 0, 0, replaceroi);
             overlayImg.release();
+
+            /*
+            * Check correct overlay.
+            */
+
         }
     }
 }
@@ -388,6 +432,10 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig, int option) {
 
     cv::resize(src, srcScaled, cv::Size(), sf, sf);
 
+    /*
+     * Check that image has been resized with one dimension = 512 and the other scaled by the same s.f.
+     */
+
     cv::Mat srcFinal;
 
     if (r_or_c)
@@ -398,6 +446,10 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig, int option) {
     {
         cv::copyMakeBorder(srcScaled, srcFinal, 0, 0, 0, 512-srcScaled.cols, cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
     }
+
+    /*
+     * Check that image now has 512 x 512 dimensions after padding
+     */
 
     // Convert image data to ncnn format
     // opencv image in bgr, model needs rgb
@@ -417,7 +469,6 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig, int option) {
 
     float means[] = {0.0, 0.0, 0.0};
     float norms[] = {1.0/255.0, 1.0/255.0, 1.0/255.0};
-
     input.substract_mean_normalize(means, norms);
 
     // Inference
@@ -444,7 +495,8 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig, int option) {
             int left = int((x - 0.5 * w));
             int top = int((y - 0.5 * h));
 
-            if (left > 0 && top > 0 && w > 0 && h > 0)
+            if (left > 0 && top > 0 && w > 0 && h > 0 &&
+                left+w < orig.cols && top+h < orig.rows)
             {
                 int width = int(w);
                 int height = int(h);
@@ -453,6 +505,10 @@ cv::Mat Detection(cv::Mat src, cv::Mat orig, int option) {
             }
         }
     }
+
+    /*
+     * Check that all boxes given are within image co-ordinates and all confidences are above confidence thresh
+     */
 
     bugString = "Detected " + std::to_string(boxes->size()) + " boxes";
     __android_log_print(ANDROID_LOG_DEBUG, "det_boxes", "%s", bugString.c_str());
@@ -507,6 +563,10 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg, int option) {
     cv::Mat grayImg;
     cvtColor(img, grayImg, cv::COLOR_BGR2GRAY);
 
+    /*
+     * Test that image is correctly converted to grayscale
+     */
+
     //img = gammaCorrect(img, 0.95);
 
     cv::Mat grayDilate;
@@ -523,8 +583,16 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg, int option) {
     grayErode.release();
     grayImg.release();
 
+    /*
+     * Test that image is different after preprocessing applied
+     */
+
     cv::Mat grayBGR;
     cvtColor(graySmoothed, grayBGR, cv::COLOR_GRAY2BGR);
+
+    /*
+    * Test that image is correctly converted to BGR and all three vec values are the same
+    */
 
     graySmoothed.release();
 
