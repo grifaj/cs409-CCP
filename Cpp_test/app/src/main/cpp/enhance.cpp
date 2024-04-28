@@ -462,11 +462,11 @@ cv::Mat padImage(cv::Mat *srcImg)
 
     if (srcImg->rows >= srcImg->cols)
     {
-        r_or_c = true;
+        r_or_c = false;
     }
     else
     {
-        r_or_c = false;
+        r_or_c = true;
     }
 
     if (r_or_c)
@@ -498,18 +498,18 @@ void detectModel(cv::Mat *srcImg, cv::Mat *orig, float* sf, std::vector<cv::Rect
     ncnn::Mat output;
     extractor.extract("out0", output);
 
-    ncnn::Mat out_flatterned = output.reshape(output.w * output.h * output.c);
+    ncnn::Mat out_flattened = output.reshape(output.w * output.h * output.c);
 
     float confidenceThresh = 0.65;
-    int sec_size = out_flatterned.w/5;
+    int sec_size = out_flattened.w / 5;
     for (int j=0; j<sec_size; j++)
     {
-        if (out_flatterned[j+(sec_size*4)] > confidenceThresh)
+        if (out_flattened[j + (sec_size * 4)] > confidenceThresh)
         {
-            float x = out_flatterned[j] / *sf;
-            float y = out_flatterned[j+(sec_size)] / *sf;
-            float w = out_flatterned[j+(sec_size*2)] / *sf;
-            float h = out_flatterned[j+(sec_size*3)] / *sf;
+            float x = out_flattened[j] / *sf;
+            float y = out_flattened[j + (sec_size)] / *sf;
+            float w = out_flattened[j + (sec_size * 2)] / *sf;
+            float h = out_flattened[j + (sec_size * 3)] / *sf;
 
             int left = int((x - 0.5 * w));
             int top = int((y - 0.5 * h));
@@ -520,7 +520,7 @@ void detectModel(cv::Mat *srcImg, cv::Mat *orig, float* sf, std::vector<cv::Rect
                 int width = int(w);
                 int height = int(h);
                 boxes->push_back(cv::Rect(left, top, width, height));
-                confidences->push_back(float(out_flatterned[j+(sec_size*4)]));
+                confidences->push_back(float(out_flattened[j + (sec_size * 4)]));
             }
         }
     }
@@ -775,6 +775,8 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg, int option) {
     std::vector<cv::Rect>* selected_boxes = new std::vector<cv::Rect>();
     nms(boxes, confidences, selected_boxes, 0.5);
 
+    __android_log_print(ANDROID_LOG_DEBUG, "binary box", "boxes found %zu",selected_boxes->size());
+
     if(!modelInitialisedFlag)
     {
         loadTranslationModel();
@@ -795,17 +797,18 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg, int option) {
     std::string argMax_class;
     for (std::size_t i = 0; i != selected_boxes->size(); i++)
     {
-        cv::Mat roi = srcImg((*selected_boxes)[i]);
-        cv::Mat replaceroi = replaceImg((*selected_boxes)[i]);
-        cv::Mat binRoi = binariseBox(srcImg, (*selected_boxes)[i]);
-
-        binRoi = translationPreProcess(&binRoi);
-
-        getTranslation(&binRoi, &max_class, &argMax_class);
-
-        binRoi = translationPreProcess(&binRoi);
-
-        overlayTranslation(roi, replaceroi, &max_class, &argMax_class, option);
+          cv::rectangle(srcImg, (*selected_boxes)[i], cv::Scalar(255, 0, 0), 1);
+//        cv::Mat roi = srcImg((*selected_boxes)[i]);
+//        cv::Mat replaceroi = replaceImg((*selected_boxes)[i]);
+//        cv::Mat binRoi = binariseBox(srcImg, (*selected_boxes)[i]);
+//
+//        binRoi = translationPreProcess(&binRoi);
+//
+//        getTranslation(&binRoi, &max_class, &argMax_class);
+//
+//        binRoi = translationPreProcess(&binRoi);
+//
+//        overlayTranslation(roi, replaceroi, &max_class, &argMax_class, option);
 
     }
 

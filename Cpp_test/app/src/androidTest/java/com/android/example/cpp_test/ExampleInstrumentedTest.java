@@ -54,10 +54,16 @@ public class ExampleInstrumentedTest {
         assertEquals(1,calculate_IOU(1),delta);
 
     }
+    @Test
+    public void convert2Grey(){
+        assertTrue(greyImage());
+    }
+
     // convert image to greyscale correctly
     // padded yolo image properly
     public native String validate(long madAddrGr,long matAddrRgba);
     public native String stringFromJNI();
     public native String testModelsLoad(AssetManager assetManager);
     public native float calculate_IOU(int flag);
+    public native boolean greyImage();
 }

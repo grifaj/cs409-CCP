@@ -90,6 +90,14 @@ Java_com_android_example_cpp_1test_ExampleInstrumentedTest_calculate_1IOU(JNIEnv
         cv::Rect a = cv::Rect(0, 0, 100, 100);
         ret = calculate_IOU(a, a);
     }
-
     return ret;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_greyImage(JNIEnv *env, jobject thiz) {
+    cv::Mat srcImg(320, 240, CV_8UC3, cv::Scalar(100, 100, 100));
+    cv::Mat output = grayImage(&srcImg);
+    return  output.channels() == 1;
+
 }
