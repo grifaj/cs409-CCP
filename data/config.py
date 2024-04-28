@@ -2,13 +2,13 @@ class Config:
     model_types = ['resnet_50', 'mobilenet_v3_large', 'vgg_19']
 
     # model name - select architecture to train
-    MODEL_NAME = model_types[1]
+    MODEL_NAME = model_types[2]
     # path to read file names from (needs to be in a train.csv format)
     DATA_PATH = "./trainData.csv"
     # path which pretrained torch weights are stored to
     TORCH_MODEL_CACHE = ""
     # number of classes in classification task
-    C.NUM_CLASSES = 1000
+    NUM_CLASSES = 1000
     
     # batch size
     BATCH_SIZE = 18
@@ -19,7 +19,7 @@ class Config:
     # size of square images
     IMAGE_SIZE = 128
     # use the pretrained weights for chosen model
-    PRETRAINED = True
+    PRETRAINED = False
     # path the python logger will store files to
     LOG_PATH = f"./job_logs/run/{MODEL_NAME}{'_pretrained' if PRETRAINED else ''}_run.log"
     

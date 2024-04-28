@@ -80,7 +80,7 @@ def init_dataset(model_type):
         elif model_type == 'mobilenet_v3_large':
             weights = models.MobileNet_V3_Large_Weights.DEFAULT
         elif model_type == 'vgg_19':
-            weights = models.VGG19_Weights.DEFAULT
+            weights = models.VGG19_BN_Weights.DEFAULT
 
         transformation = weights.transforms()
 
@@ -121,10 +121,10 @@ def init_model(num_classes, model_type, pretrained=True, log=True): #, use_cpu=F
             model = models.mobilenet_v3_large()
     elif model_type == 'vgg_19':
         if pretrained:
-            weights = models.VGG19_Weights.DEFAULT
-            model = models.vgg19(weights = weights)
+            weights = models.VGG19_BN_Weights.DEFAULT
+            model = models.vgg19_bn(weights = weights)
         else:
-            model = models.vgg19()
+            model = models.vgg19_bn()
 
     if pretrained:
         for param in model.parameters():

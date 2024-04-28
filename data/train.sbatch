@@ -18,4 +18,4 @@ source /etc/profile.d/conda.sh
 module load CUDA
 conda activate seals 
 
-srun /dcs/20/u2009169/.conda/envs/seals/bin/python /dcs/20/u2009169/Documents/sealScript/cs409-CCP/data/train.py 
+srun /dcs/20/u2002183/.conda/envs/seals/bin/python /dcs/20/u2002183/cs409-CCP-1/data/train.py 
