@@ -10,5 +10,6 @@
 cv::Mat captureImage(AAssetManager* mgr, cv::Mat srcImg, int option);
 cv::Mat captureBoxImage(AAssetManager* mgr, cv::Mat srcImg, int x, int y, int w, int h);
 void preloadModels(AAssetManager* mgr);
+float calculate_IOU(cv::Rect a, cv::Rect b);
 
 #endif //CPP_TEST_ENHANCE_H

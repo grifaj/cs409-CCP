@@ -8,6 +8,7 @@
 #include "enhance.h"
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
+#include <opencv2/core/types_c.h>
 
 #include "net.h"
 
@@ -77,4 +78,10 @@ Java_com_android_example_cpp_1test_ExampleInstrumentedTest_testModelsLoad(JNIEnv
         return env->NewStringUTF(fail.c_str());
     }
     return env->NewStringUTF(pass.c_str());
+}
+extern "C"
+JNIEXPORT jfloat JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_calculate_1IOU(JNIEnv *env, jobject thiz, CvRect a, CvRect b) {
+    float ret = calculate_IOU(a, b);
+    return ret;
 }
