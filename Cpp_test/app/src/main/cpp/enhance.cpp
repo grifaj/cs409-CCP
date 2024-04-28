@@ -20,11 +20,11 @@ AAssetManager* mgr;
 
 void loadTranslationModel() {
     // Load model
-    int ret = translationModel.load_param(mgr,"mobilenet_v3_large_3-sim-opt.param");
+    int ret = translationModel.load_param(mgr,"mobilenet_v3_large-sim-opt.param");
     if (ret) {
          __android_log_print(ANDROID_LOG_ERROR, "load_param_error", "Failed to load the model parameters");
     }
-    ret = translationModel.load_model(mgr, "mobilenet_v3_large_3-sim-opt.bin");
+    ret = translationModel.load_model(mgr, "mobilenet_v3_large-sim-opt.bin");
     if (ret) {
        __android_log_print(ANDROID_LOG_ERROR, "load_weight_error", "Failed to load the model weights");
     }
@@ -669,7 +669,7 @@ cv::Mat translationPreProcess(cv::Mat* srcImg)
     const int offsetW = (binRoiR.cols - cropSize) / 2;
     const int offsetH = (binRoiR.rows - cropSize) / 2;
     const cv::Rect roiBin(offsetW, offsetH, cropSize, cropSize);
-    return binRoiR(roiBin);
+    return binRoiR(roiBin).clone();
 }
 
 void getTranslation(cv::Mat* srcImg, float* max, std::string* argMax)
@@ -695,6 +695,13 @@ void getTranslation(cv::Mat* srcImg, float* max, std::string* argMax)
             *argMax = std::to_string(j+1);
         }
     }
+
+    std::string bugString;
+    bugString = "Max class: " + *argMax;
+    __android_log_print(ANDROID_LOG_DEBUG, "REFACTOR", "%s", bugString.c_str());
+
+    bugString = "Max confidence: " + std::to_string(*max);
+    __android_log_print(ANDROID_LOG_DEBUG, "REFACTOR", "%s", bugString.c_str());
 }
 
 void overlayTranslation(cv::Mat roi, cv::Mat replaceroi, float* max, std::string* argMax, int option)
