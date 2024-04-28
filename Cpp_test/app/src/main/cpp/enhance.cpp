@@ -616,7 +616,6 @@ void mergeBounding(std::vector<cv::Rect>& inBoxes, cv::Mat& img, std::vector<cv:
     }
 }
 
-/* Mser Detection legacy code*/
 cv::Mat mserDetection(cv::Mat img, cv::Mat colImg, bool thresholding = false, int xthresh = 10, int ythresh = 10)
 {
     std::vector<std::vector<cv::Point>> regions;
