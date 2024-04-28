@@ -1,4 +1,11 @@
-# Object Detection Source Files
+<div align="center">
+
+<img src="https://github.com/grifaj/cs409-CCP/assets/17861497/96fec4b0-3a4f-4e5e-9dea-bccb3126933c">
+
+</div>
+
+
+# cs409-CCP | Object Detection
 
 This directory lists all of the source files that was used during the creation of the YOLOv8 model for detecting seal script characters. There are three key sections in this directory:
 
