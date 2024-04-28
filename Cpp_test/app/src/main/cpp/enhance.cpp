@@ -764,7 +764,8 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg, int option) {
     cv::Mat imPad = padImage(&sfScaled);
     sfScaled.release();
 
-    if(!detmodelInitialisedFlag){
+    if(!detmodelInitialisedFlag)
+    {
         loadDetectionModel();
     }
 
