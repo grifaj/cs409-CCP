@@ -1,4 +1,10 @@
-# cs409-CCP
+<div align="center">
+
+<img src="https://github.com/grifaj/cs409-CCP/assets/17861497/96fec4b0-3a4f-4e5e-9dea-bccb3126933c">
+
+</div>
+
+# cs409-CCP | Seal Script Translation
 
 ![alt text](https://github.com/grifaj/cs409-CCP/blob/main/images/system_overview_landscape.jpg?raw=true)
 
@@ -43,3 +49,4 @@ For converting *.onnx* to NCNN files, we use an external tool https://convertmod
 [^1]: Andrew Howard et al. ‘Searching for MobileNetV3’. In: CoRRabs/1905.02244 (2019). arXiv: 1905.02244. URL: http://arxiv.org/abs/1905.02244.
 
 [^2]: Jun Da. Character frequency lists 汉字单字频率列表. https://lingua.mtsu.edu/chinese-computing/statistics/. Accessed 15th April 2024, Page last updated 最近更新: 2005-12-21
+
