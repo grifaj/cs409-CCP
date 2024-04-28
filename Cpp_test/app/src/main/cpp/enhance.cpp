@@ -462,11 +462,11 @@ cv::Mat padImage(cv::Mat *srcImg)
 
     if (srcImg->rows >= srcImg->cols)
     {
-        r_or_c = true;
+        r_or_c = false;
     }
     else
     {
-        r_or_c = false;
+        r_or_c = true;
     }
 
     if (r_or_c)
@@ -764,7 +764,8 @@ cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg, int option) {
     cv::Mat imPad = padImage(&sfScaled);
     sfScaled.release();
 
-    if(!detmodelInitialisedFlag){
+    if(!detmodelInitialisedFlag)
+    {
         loadDetectionModel();
     }
 
