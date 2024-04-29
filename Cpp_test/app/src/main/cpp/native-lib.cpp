@@ -156,9 +156,9 @@ Java_com_android_example_cpp_1test_ExampleInstrumentedTest_JNI_1non_1max_1suppre
 
     std::vector<cv::Rect>* boxes = new std::vector<cv::Rect>();
     boxes->push_back(cv::Rect(100,100,50,50));
-    boxes->push_back(cv::Rect(100,100,50,50));
+    boxes->push_back(cv::Rect(90,100,50,50));
     boxes->push_back(cv::Rect(10,20,30,40));
-    boxes->push_back(cv::Rect(10,20,30,40));
+    boxes->push_back(cv::Rect(5,20,30,40));
 
     std::vector<float> *scores =  new std::vector<float>();
     scores->push_back(100);
