@@ -21,21 +21,25 @@ public class MainActivity extends AppCompatActivity {
     private static final String[] CAMERA_PERMISSION = new String[]{Manifest.permission.CAMERA};
     private static final int CAMERA_REQUEST_CODE = 10;
 
+    // global start of application
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_main); // set view to camera view
+        // check opencv loads in java
         if(OpenCVLoader.initLocal())
             Log.d("Loaded","success");
         else
             Log.d("Loaded","error");
 
+        // load models into heap to speed up inference times
         preloadModels(getAssets());
 
+        // get required camera permissions
         while(!hasCameraPermission()){
             requestPermission();
         }
-        enableCamera();
+        enableCamera(); // switch to camera activity
 
     }
 

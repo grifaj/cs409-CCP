@@ -273,10 +273,8 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             //to indicate this activity isn't handling it
             if (drawingMode)
             {
-//                Log.d("TOUCH", "Passing to next listener");
                 return false;
             }
-//            Log.d("TOUCH", "Screen touched");
             //let scale gesture detector also know about the event in case of pinching
             scaleGestureDetector.onTouchEvent(event);
 
@@ -314,7 +312,6 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
                 } catch (Exception CameraInfoUnavailableException)
                 {
-                    //Log.d("ERROR", "Cannot Access Camera", CameraInfoUnavailableException);
                     Log.d("ERROR", "Cannot Access Camera");
                 }
 
@@ -325,7 +322,6 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
         //Setup a touch listener for our drawing view, which simply returns the draw activities on touch event routine
         drawView.setOnTouchListener((v, event) -> {
-//            Log.d("TOUCH", "Passed to me");
             return drawView.onTouchEvent(event);
         });
 
@@ -348,27 +344,33 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         previewMode = false;
     }
 
+    // listener for system back
     @Override
     public void onBackPressed() {
         Log.d("backButton", "Pressed");
+        // return to camera feed if in preview
         if (previewMode) {
             closePreview();
             return;
         }
+        //else close app
         moveTaskToBack(true);
 
-        // don't judge, it works
+        // super function must be overridden but we ignore it
         if(1==0){
             super.onBackPressed();
         }
 
     }
 
+    // detects if a sensor changes reading, used to detect acceleration
     @Override
     public void onSensorChanged(SensorEvent event) {
+        // only needed for live mode
         if (videoMode)
         {
             Log.d("VIDEO", "Detected sensor change");
+            // check for linear acceleration specifically
             if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
             {
                 float[] mGravity = event.values.clone();
@@ -381,15 +383,17 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
                 float delta = mAccelCurrent - mAccelLast;
                 mAccel = mAccel * 0.9f + delta;
 
+                // check if under threshold for holding still
                 if (Math.abs(mAccel) < 0.1)
                 {
+                    // add to streak
                     accelThreshCount +=1;
-                    if (accelThreshCount % 30 == 0)
+                    if (accelThreshCount % 30 == 0) // force reset every 30 readings
                     {
                         predicted = false;
                     }
                 }
-                else
+                else // phone must be still for consecutive readings
                 {
                     accelThreshCount = 0;
                     predicted = false;
@@ -398,6 +402,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         }
     }
 
+    // sensor functions that must be overriden
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy)
     {
@@ -418,9 +423,10 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         sensorMan.unregisterListener(this);
     }
 
+    // listener for camera feed, used also for frame by frame analysis for live view
     @OptIn(markerClass = ExperimentalGetImage.class) private void showImagePreview()
     {
-
+        // on each camera feed frame
         cameraProviderFuture.addListener(() -> {
             ImageAnalysis imageAnalysis =
                     new ImageAnalysis.Builder()
@@ -429,8 +435,9 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
             imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this), imageProxy -> {
 
-                //Log.d("acc", String.valueOf(mAccel));
+                // check acceleration streak and time delay
                 if (accelThreshCount >= 5 && !predicted) {
+                    // show image overlay on camera feed
                     Image image = imageProxy.getImage();
                     assert image != null;
                     bitmapPhoto = previewView.getBitmap();
@@ -449,7 +456,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
                 imageProxy.close();
             });
 
-
+            // code for building camera view
             try {
                 processCameraProvider = cameraProviderFuture.get();
                 Preview preview = new Preview.Builder().build();
@@ -465,6 +472,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         }, ContextCompat.getMainExecutor(this));
     }
 
+    // tap to focus button
     private void animateFocusRing(float x, float y)
     {
         ImageView focusRing = findViewById(R.id.focusRingView);
@@ -472,6 +480,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         float width = focusRing.getWidth();
         float height = focusRing.getHeight();
 
+        // set ring on point of focus location
         focusRing.setX(x - width/2);
         focusRing.setY(y - height/2);
 
@@ -485,12 +494,14 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
                 .setListener(new Animator.AnimatorListener()
                 {
 
+                    // remove ring after focus event ended
                     @Override
                     public void onAnimationEnd(@NonNull Animator animation)
                     {
                         focusRing.setVisibility(View.INVISIBLE);
 
                     }
+                    // all other animations must be overridden
                     @Override
                     public void onAnimationStart(@NonNull Animator animation)
                     {
@@ -537,10 +548,11 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         return windowManager.getDefaultDisplay();
     }
 
+    // functionality for pinch to zoom in camera feed
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener
     {
         @Override
-        public boolean onScale(ScaleGestureDetector detector) {
+        public boolean onScale(ScaleGestureDetector detector) { // on pinch
             accelThreshCount = 0;
             float currentZoomRatio = Objects.requireNonNull(camera.getCameraInfo().getZoomState().getValue()).getZoomRatio();
             float delta = detector.getScaleFactor();
