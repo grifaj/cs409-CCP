@@ -8,7 +8,13 @@
       <entry key="app">
         <State />
       </entry>
+      <entry key="binariseImg()">
+        <State />
+      </entry>
       <entry key="image_pad()">
+        <State />
+      </entry>
+      <entry key="testDetection()">
         <State />
       </entry>
     </value>

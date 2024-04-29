@@ -79,6 +79,27 @@ public class ExampleInstrumentedTest {
     public void image_pad(){assertTrue(padImage());}
     @Test
     public void scaleImg(){assertTrue(scale_img());}
+    @Test
+    public void testDetection() throws IOException {
+        InputStream stream = ctx.getAssets().open("seal-script-test.jpg");
+
+        BitmapFactory.Options bmpFactoryOptions = new BitmapFactory.Options();
+        bmpFactoryOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        Bitmap bmp = BitmapFactory.decodeStream(stream, null, bmpFactoryOptions);
+        Mat ImageMat = new Mat();
+        Utils.bitmapToMat(bmp, ImageMat);
+
+        assertTrue(test_detection(ImageMat.getNativeObjAddr(), ctx.getAssets()));
+    }
+    @Test
+    public void translationPre(){assertTrue(translation_Pre());}
+    @Test
+    public void getTranslation(){assertTrue(get_translation(ctx.getAssets()));}
+    @Test
+    public void testOverlay(){
+        assertTrue(test_overlay(ctx.getAssets()));
+    }
+
     public native String validate(long madAddrGr,long matAddrRgba);
     public native String stringFromJNI();
     public native String testModelsLoad(AssetManager assetManager);
@@ -89,4 +110,8 @@ public class ExampleInstrumentedTest {
     public native boolean JNI_non_max_suppression();
     public native boolean padImage();
     public native boolean scale_img();
+    public native boolean test_detection(long image, AssetManager assetManager);
+    public native boolean translation_Pre();
+    public native boolean get_translation(AssetManager assetManager);
+    public native boolean test_overlay(AssetManager assetManager);
 }

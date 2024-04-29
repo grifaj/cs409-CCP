@@ -17,5 +17,14 @@ void sortParallelVector(std::vector<cv::Rect>* vec, std::vector<float>* score_ve
 void nms(std::vector<cv::Rect>* boxes, std::vector<float>* scores, std::vector<cv::Rect>* selected, float thresh);
 cv::Mat padImage(cv::Mat *srcImg);
 cv::Mat resizeSF(cv::Mat *srcImg, float* sf);
+void detectModel(cv::Mat *srcImg, cv::Mat *orig, float* sf, std::vector<cv::Rect>* boxes, std::vector<float>* confidences);
+cv::Mat preProcessImage(cv::Mat* srcImg);
+cv::Mat grayToBGR(cv::Mat* srcImg);
+void loadDetectionModel();
+cv::Mat translationPreProcess(cv::Mat* srcImg);
+void assignManager(AAssetManager* manager);
+void getTranslation(cv::Mat* srcImg, float* max, std::string* argMax);
+void loadTranslationModel();
+void overlayTranslation(cv::Mat roi, cv::Mat replaceroi, float* max, std::string* argMax);
 
 #endif //CPP_TEST_ENHANCE_H

@@ -445,9 +445,13 @@ void overlayTranslation(cv::Mat roi, cv::Mat replaceroi, float* max, std::string
     }
 }
 
+void assignManager(AAssetManager* manager){
+    mgr = manager;
+}
+
 cv::Mat captureImage(AAssetManager* manager, cv::Mat srcImg, int option) {
     auto beg = std::chrono::high_resolution_clock::now();
-    mgr = manager;
+    assignManager(manager);
 
     cv::Mat grayImg = grayImage(&srcImg);
 

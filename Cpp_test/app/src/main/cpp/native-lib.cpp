@@ -185,11 +185,81 @@ extern "C"
 JNIEXPORT jboolean JNICALL
 Java_com_android_example_cpp_1test_ExampleInstrumentedTest_scale_1img(JNIEnv *env, jobject thiz) {
     cv::Mat srcImg(1024, 2048, CV_8UC3, cv::Scalar(100, 100, 100));
-    float* sf;
+    float sf;
 
-    cv::Mat output =  resizeSF(&srcImg, sf);
+    cv::Mat output =  resizeSF(&srcImg, &sf);
 
-    __android_log_print(ANDROID_LOG_DEBUG, "Testing", "%d, %d, %f", output.size().height, output.size().width, *sf);
+    return output.size().height == 256 && output.size().width ==  512 && sf == 0.25;
+}
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_test_1detection(JNIEnv *env,jobject thiz, jlong image, jobject assetManager) {
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    cv::Mat* srcImg=(cv::Mat*)image;
 
-    return false;
+    cv::Mat grayImg = grayImage(srcImg);
+
+    cv::Mat graySmoothed = preProcessImage(&grayImg);
+    grayImg.release();
+
+    cv::Mat grayBGR = grayToBGR(&graySmoothed);
+    graySmoothed.release();
+
+    float sf;
+    cv::Mat sfScaled = resizeSF(&grayBGR, &sf);
+    grayBGR.release();
+
+    cv::Mat imPad = padImage(&sfScaled);
+    sfScaled.release();
+
+    assignManager(mgr);
+    loadDetectionModel();
+
+    std::vector<cv::Rect>* boxes = new std::vector<cv::Rect>();
+    std::vector<float>* confidences = new std::vector<float>();
+
+    detectModel(&imPad, srcImg, &sf, boxes, confidences);
+
+    return boxes->size() >= 0 && confidences->size() >= 0;
+}
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_translation_1Pre(JNIEnv *env,jobject thiz) {
+    cv::Mat srcImg(512, 240, CV_8UC3, cv::Scalar(100, 100, 100));
+
+    cv::Mat output = translationPreProcess(&srcImg);
+
+    return output.rows == 224 && output.cols == 224;
+}
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_get_1translation(JNIEnv *env, jobject thiz, jobject assetManager) {
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    assignManager(mgr);
+    cv::Mat srcImg(512, 240, CV_8UC3, cv::Scalar(100, 100, 100));
+    float max;
+    std::string argMax;
+
+    loadTranslationModel();
+    getTranslation(&srcImg, &max, &argMax);
+
+    int argMax_int = std::stoi(argMax);
+
+    return max < 0.7 && argMax_int >= 1 && argMax_int <= 1000;
+}
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_android_example_cpp_1test_ExampleInstrumentedTest_test_1overlay(JNIEnv *env,jobject thiz, jobject assetManager) {
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    assignManager(mgr);
+
+    cv::Mat roi(512, 240, CV_8UC3, cv::Scalar(100, 100, 100));
+    cv::Mat replaceroi(512, 240, CV_8UC3, cv::Scalar(100, 100, 100));
+
+    float max = 0.8;
+    std::string argMax = "1";
+
+    overlayTranslation(roi, replaceroi, &max, &argMax);
+
+    return  roi.data != replaceroi.data;
 }
