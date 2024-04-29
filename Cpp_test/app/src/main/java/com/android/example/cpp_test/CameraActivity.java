@@ -51,6 +51,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     {
         System.loadLibrary("cpp_test");
     }
+    //set up different variables required for running and tracking system state.
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private Camera camera;
     private CameraSelector lensFacing = CameraSelector.DEFAULT_BACK_CAMERA;
@@ -80,15 +81,19 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
     private boolean videoMode;
     private boolean previewMode;
 
+    //override the super class on create method, this method will run when the class is first started
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //set view on the phone to layout defined in activity main xml file
         setContentView(R.layout.activity_main);
+        //phone should not be in any current mode.
         drawingMode = false;
         videoMode = false;
         previewMode = false;
 
+        //get resources of xml such as icons so we can manipulate them later.
         previewView = findViewById(R.id.previewView);
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         cameraShutter = findViewById(R.id.cameraShutter);
@@ -101,53 +106,65 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
         swapImage = findViewById(R.id.swapImage);
         drawView = findViewById(R.id.drawView);
 
+        //set up initial accelerometer sensor but unregister it for now
         sensorMan = (SensorManager)getSystemService(SENSOR_SERVICE);
         accelerometer = sensorMan.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         sensorMan.unregisterListener(this, accelerometer);
 
-        // create camera view
+        //call show image preview which will display the current camera feed
         showImagePreview();
 
-        // freeze camera preview on taken photo
+        //set a listener for the take a photo button, when it is clicked it will...
         cameraShutter.setOnClickListener(v -> {
             // take photo from preview
+            //get a bitmap photo of the current camera feed
             originalBitmap = previewView.getBitmap();
             assert originalBitmap != null;
+            //duplicate it so we have original photo + translation photo
             bitmapPhoto = originalBitmap.copy(originalBitmap.getConfig(), true);
+            //preview mode is now true -> i.e. they are viewing a photo
             previewMode = true;
+
+            //if the user is not in draw mode when the photo was taken then just detect characters on
+            //camera feed. otherwise translate character inside the drawing box
             if (!drawingMode)
             {
-                detectChars(); // sets bitmap to have chars on it
+                detectChars();
             }
             else
             {
                 detectBoxChars();
             }
 
-            // set photoPreview to image and make it visible
+            //set a hidden photo preview to be the bitmap photo we just took
+            //and make it visible
             photoPreview.setImageBitmap(bitmapPhoto);
             photoPreview.setVisibility(View.VISIBLE);
 
-            // remove other buttons
+            // remove user buttons so they can't interact with drawmode and live mode etc.
             switchLens.setVisibility(View.GONE);
             resetZoom.setVisibility(View.GONE);
             cameraShutter.setVisibility(View.GONE);
             drawMode.setVisibility(View.GONE);
             liveMode.setVisibility(View.GONE);
 
-            // stop camera view
+            //stop the camera feed from running while user is looking at the translated photo
             processCameraProvider.unbindAll();
 
-            // also make preview exit button visible
+            //make the close photo preview button visible so the user can stop looking at the photo
+            //as well as the swap between translation and original image button
             closePhotoPreview.setVisibility(View.VISIBLE);
             swapImage.setVisibility(View.VISIBLE);
         });
 
+        //set up a listener for the swap between original and translated image button to listen
+        //for when it is clicked
         swapImage.setOnClickListener(v -> {
+            //animate it to make it look fancy
             resetZoom.setAlpha(0.5f); // dim to animate
             resetZoom.animate().alpha(1f).setDuration(1000); // return to normal
 
-            // swap to blank image
+            //swap photo preview to show the original image / translated image based on current state
             if(translate){
                 photoPreview.setImageBitmap(originalBitmap);
             }else{
@@ -158,7 +175,10 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
         });
 
+        //set up a listener for the draw mode button
         drawMode.setOnClickListener(v -> {
+            //if current in drawing mode then deactivate it, make it's view invisible
+            //and set the button to appear deactivated.
             if (drawingMode)
             {
                 drawingMode = false;
@@ -166,8 +186,10 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
 
                 drawView.setVisibility(View.GONE);
             }
-            else
+            else //otherwise...
             {
+                //if live translation mode is active, then turn it off and unregister stuff to do with it
+                //then set drawmode to true and make the draw view visibile so the user can interact with the box
                 if (videoMode)
                 {
                     videoMode = false;
@@ -177,16 +199,20 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
                     sensorMan.unregisterListener(this, accelerometer);
                 }
 
+
                 drawingMode = true;
                 drawMode.setBackgroundResource(R.drawable.pressed_background);
 
                 drawView.setVisibility(View.VISIBLE);
             }
 
+            //alert the drawing view about its current state so it can either listen or not
             drawView.setDrawMode(drawingMode);
         });
 
+        //set up listener for the live translation mode button when its clicked
         liveMode.setOnClickListener(v -> {
+            //if live translation mode is active then deactivate it and unregister accelerometer listener
             if (videoMode)
             {
                 videoMode = false;
@@ -197,6 +223,8 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             }
             else
             {
+                //otherwise turn off drawing mode if it's currently on
+                //and turn on live video mode and register accelerometer listener again
                 if (drawingMode)
                 {
                     drawingMode = false;
@@ -211,6 +239,7 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             }
         });
 
+        //set a listener on the reset zoom button which will animate and set zoom back to 1x
         resetZoom.setOnClickListener(v -> {
             resetZoom.setAlpha(0.5f); // dim to animate
             camera.getCameraControl().setZoomRatio(1); // set zoom back to normal
@@ -218,11 +247,14 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             resetZoom.animate().alpha(1f).setDuration(1000); // return to normal
         });
 
-        // return to camera preview
+        //run close preview function when the photo preview is closed by pressing the button
+        //will activate camera feed once again
         closePhotoPreview.setOnClickListener(v -> {
             closePreview();
         });
 
+        //set up a listener for the switch lens button which will change which camera is being
+        //used on the phone when its clicked.
         switchLens.setOnClickListener(v -> {
             if (lensFacing == CameraSelector.DEFAULT_FRONT_CAMERA) lensFacing = CameraSelector.DEFAULT_BACK_CAMERA;
             else if (lensFacing == CameraSelector.DEFAULT_BACK_CAMERA) lensFacing = CameraSelector.DEFAULT_FRONT_CAMERA;
@@ -231,40 +263,53 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             showImagePreview();
         });
 
+        //set up a listener for scaling gestures such as pinches -> this will allow for zooming capabilities
         ScaleListener listener = new ScaleListener();
         ScaleGestureDetector scaleGestureDetector = new ScaleGestureDetector(previewView.getContext(), listener);
 
+        //set up a listener for touching the camera feed preview screen.
         previewView.setOnTouchListener((v, event) -> {
+            //if the app is in drawing mode, nothing should happen for this activity when screen is tapped -> return false
+            //to indicate this activity isn't handling it
             if (drawingMode)
             {
 //                Log.d("TOUCH", "Passing to next listener");
                 return false;
             }
 //            Log.d("TOUCH", "Screen touched");
+            //let scale gesture detector also know about the event in case of pinching
             scaleGestureDetector.onTouchEvent(event);
+
+            //otherwise if the touch action is them tapping onto the screen do nothing
             if(event.getAction() == MotionEvent.ACTION_DOWN)
             {
                 Log.d("TOUCH", "Pressed");
                 return true;
             }
+            //if the action is them removing their finger from the screen then we will autofocus to that location
             if(event.getAction() == MotionEvent.ACTION_UP)
             {
                 Log.d("TOUCH", "Released");
                 //final Rect sensorArraySize = cameraProviderFuture.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                //get x and y of touch position
                 float x = event.getX();
                 float y = event.getY();
                 String output = "x = " + x + " y = " + y;
                 Log.d("TOUCH", output);
 
+                //get display and build a meteringPoint on our screen so we have x and y in relation to our screen
                 Display display = getDefaultDisplay(this);
                 MeteringPointFactory factory  = new DisplayOrientedMeteringPointFactory(display, camera.getCameraInfo(), ((float) previewView.getWidth()), ((float) previewView.getHeight()));
                 MeteringPoint meteringPoint = factory.createPoint(x,y);
                 try
                 {
+                    //build a focusing area around our metering point
                     FocusMeteringAction.Builder builder = new FocusMeteringAction.Builder(meteringPoint, FocusMeteringAction.FLAG_AF);
                     builder.disableAutoCancel();
+                    //focus our camera to the metering point
                     camera.getCameraControl().startFocusAndMetering(builder.build());
 
+                    //play an animation to show what happened
                     animateFocusRing(x, y);
 
                 } catch (Exception CameraInfoUnavailableException)
@@ -278,12 +323,14 @@ public class CameraActivity extends AppCompatActivity implements SensorEventList
             return false;
         });
 
+        //Setup a touch listener for our drawing view, which simply returns the draw activities on touch event routine
         drawView.setOnTouchListener((v, event) -> {
 //            Log.d("TOUCH", "Passed to me");
             return drawView.onTouchEvent(event);
         });
 
     }
+
 
     public void closePreview(){
         showImagePreview();
